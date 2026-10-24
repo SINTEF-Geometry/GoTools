@@ -2298,6 +2298,7 @@ Point CurveOnSurface::faceParameter(double crv_par,
       if (pcurve_.get())
 	{
 	  param = pcurve_->ParamCurve::point(crv_par);
+	  seed = param.begin();
 	  // crv_par = param[2-constdir_];
 	  // same = true;
 	}
@@ -2306,7 +2307,6 @@ Point CurveOnSurface::faceParameter(double crv_par,
 	  param[constdir_-1] = constval_;
 	  param[2-constdir_] = crv_par;
 	}
-      seed = param.begin();
     }
   else if (pcurve_.get())
     {

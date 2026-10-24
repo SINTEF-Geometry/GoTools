@@ -151,6 +151,12 @@ public:
     // inherited from ParamCurve
     virtual void setParameterInterval(double t1, double t2);
 
+   // Translate the curve along a given vector
+    virtual void translateCurve(const Point& dir)
+    {
+      spacecurve_->translateCurve(dir);
+    }
+
     // inherited from ParamCurve
     virtual SplineCurve* geometryCurve();
 

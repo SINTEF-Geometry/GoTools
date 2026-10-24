@@ -53,6 +53,7 @@ namespace Go
 {
 
  class CompositeCurve;
+  class Vertex;
 
 //===========================================================================
 /** A curve model including topological information
@@ -107,6 +108,12 @@ class CurveModel : public CompositeModel
   /// \return Index to curve
   int getIndex(ParamCurve* curve) const;
 
+    /// Fetch all edges
+    std::vector<shared_ptr<ftEdge> > allEdges()
+    {
+      return edges_;
+    }
+    
   /// Evaluate position
   /// \param idx Index of curve
   /// \param par[] Parameter value
@@ -224,6 +231,11 @@ class CurveModel : public CompositeModel
   /// Fetch all uniquely connected composite curves
   /// \return Vector of pointers to the composite curves
   std::vector<shared_ptr<CompositeCurve> > fetchCompositeCurves() const;
+
+  /// Return all vertices associated with this surface model
+  /// \retval vertices Vector of pointers to all vertices.
+  void getVertices(std::vector<shared_ptr<Vertex> >& vertices) const;
+
 
 private:
   std::vector<shared_ptr<ftEdge> > edges_;

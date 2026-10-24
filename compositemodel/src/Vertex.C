@@ -841,6 +841,9 @@ namespace Go
       for (size_t ki=0; ki<edges.size(); ++ki)
 	{
 	  ftSurface* curr_face = edges[ki]->face()->asFtSurface();
+	  shared_ptr<ParamSurface> surf = curr_face->surface();
+	  if (!surf.get())
+	    continue;
 	  size_t kj;
 	  for (kj=0; kj<faces.size(); ++kj)
 	    if (faces[kj].first == curr_face)

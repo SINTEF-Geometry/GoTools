@@ -87,6 +87,10 @@ class GO_API Domain
     virtual bool isOnBoundary(const Array<double, 2>& point, 
 			      double tolerance) const = 0;
 
+    /// Check if the given parameter pair is located at a domain corner
+    virtual bool isOnCorner(const Array<double, 2>& point, 
+			    double tolerance) const = 0;
+
     /// Find the (u, v) point in the Domain that is closest (using Euclidean distance
     /// in R^2) to a given (u, v) point.  If the given point is in the domain, then 
     /// the answer is obviously the same point.

@@ -47,8 +47,8 @@
 
 using std::vector;
 
-namespace Go
-{
+using namespace Go;
+
   //===========================================================================
   CurveModel::CurveModel(double gap,   // Gap between adjacent curves
 			 double neighbour,  // Threshold for whether curves are adjacent
@@ -391,20 +391,40 @@ void CurveModel::tesselate(vector<shared_ptr<GeneralMesh> >& meshes) const
     vector<shared_ptr<Vertex> > vertices(all_vertices.begin(), 
 					 all_vertices.end());
     for (ki=0; ki<vertices.size(); ++ki)
-      for (kj=ki+1; kj<vertices.size(); ++kj)
-	{
-	  double dist = 
-	    vertices[ki]->getVertexPoint().dist(vertices[kj]->getVertexPoint());
-	  if (dist < toptol_.neighbour)
-	    {
-	      vector<ftEdge*> connected_edges = vertices[kj]->allEdges();
-	      vertices[ki]->joinVertex(vertices[kj]);
-	      for (size_t kr=0; kr<connected_edges.size(); ++kr)
-		connected_edges[kr]->replaceVertex(vertices[kj], vertices[ki]);
-	      vertices.erase(vertices.begin() + kj);
-	      break;
-	    }
+      {
+	for (kj=ki+1; kj<vertices.size(); )
+	  {
+	    double dist = 
+	      vertices[ki]->getVertexPoint().dist(vertices[kj]->getVertexPoint());
+	    if (dist < toptol_.neighbour)
+	      {
+		vector<ftEdge*> connected_edges = vertices[kj]->allEdges();
+		vertices[ki]->joinVertex(vertices[kj]);
+		for (size_t kr=0; kr<connected_edges.size(); ++kr)
+		  connected_edges[kr]->replaceVertex(vertices[kj], vertices[ki]);
+		vertices.erase(vertices.begin() + kj);
+	      }
+	    else
+	      ++kj;
+	  }
 	}
     
   }
-} // namespace Go
+
+  //===========================================================================
+  void CurveModel::getVertices(vector<shared_ptr<Vertex> >& vertices) const
+  //===========================================================================
+  {
+    std::set<shared_ptr<Vertex> > all_vertices;  // All vertices in the model represented once
+    for (size_t ki=0; ki<edges_.size(); ++ki)
+      {
+	shared_ptr<Vertex> vert = edges_[ki]->getVertex(true);
+	all_vertices.insert(vert);
+	vert = edges_[ki]->getVertex(false);
+	all_vertices.insert(vert);
+      }
+    vertices.clear();
+    vertices.insert(vertices.end(), all_vertices.begin(), all_vertices.end());
+  }
+
+

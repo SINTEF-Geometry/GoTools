@@ -1010,7 +1010,7 @@ namespace Go
     // Fetch constant parameter curves in the selected curve direction
     double u1 = (cv_dir == 0) ? dom.umin() : dom.vmin();
     double u2 = (cv_dir == 0) ? dom.umax() : dom.vmax();
-    double udel = (u2 - u1)/(double)(nmb_cv+1);
+    double udel = (u2 - u1)/(double)(nmb_cv+2);
     double tol1 = std::max(1.0e-7, 1.0e-5*(u2-u1));
     double par[2];
     //int ki, kj;
@@ -1071,7 +1071,7 @@ namespace Go
 	    nmb = std::max(nmb, min_samples);
 	    double v1 = crvs[kr]->startparam();
 	    double v2 = crvs[kr]->endparam();
-	    double vdel = (v2 - v1)/(double)(nmb+1);
+	    double vdel = (v2 - v1)/(double)(nmb+2);
 	    double tol2 = std::max(1.0e-7, 1.0e-5*(v2-v1));
 	    if (consider_joint)
 	      par[pt_dir] = std::min(v1+vdel, surf->nextSegmentVal(pt_dir, v1, true, tol2));

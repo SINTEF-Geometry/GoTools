@@ -73,6 +73,7 @@ ApproxCurve::ApproxCurve()
   smoothweight_ = 0.000000001;
   smoothfac_ = 1.0;
   c1fac_ = 0.0;
+  repar_ = true;
 }
 
 //***************************************************************************
@@ -96,6 +97,7 @@ ApproxCurve::ApproxCurve(const std::vector<double>& points,
   aepsge_ = aepsge;
   smoothweight_ = 0.000000001;
   c1fac_ = 0.0;
+  repar_ = (dim > 1);
 
   points_.reserve(points.size());
   parvals_.reserve(parvals.size());
@@ -133,6 +135,7 @@ ApproxCurve::ApproxCurve(const std::vector<double>& points,
   aepsge_ = aepsge;
   smoothweight_ = 0.000000001;
   c1fac_ = 0.0;
+  repar_ = (dim > 1);
 
   points_.reserve(points.size());
   parvals_.reserve(parvals.size());
@@ -168,6 +171,7 @@ ApproxCurve::ApproxCurve(const std::vector<double>& points,
   aepsge_ = aepsge;
   smoothweight_ = 0.000000001;
   c1fac_ = 0.0;
+  repar_ = (dim > 1);
 
   points_.reserve(points.size());
   parvals_.reserve(parvals.size());
@@ -423,7 +427,7 @@ void ApproxCurve::checkAccuracy(std::vector<double>& newknots, int uniform)
   curr_crv_->writeStandardHeader(of);
   curr_crv_->write(of);
 #endif
-  bool reparam = (dim_ == 1) ? false : true;
+  bool reparam = (dim_ == 1) ? false : repar_;
 
 //     double par_tol = 0.000000000001;
     maxdist_ = -10000.0;

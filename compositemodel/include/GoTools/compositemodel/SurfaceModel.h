@@ -285,6 +285,21 @@ class GO_API SurfaceModel : public CompositeModel
   			std::vector<Point>& der) const;  // Result
 
 
+  /// Closest point between a given point and the outer boundary/boundaries
+  /// of this surface model
+  /// Returns one point
+  /// \param pnt Input point
+  /// \param clo_pnt Found closest point
+  /// \param idx Index of surface where the closest point is found
+  /// \param clo_par[] Parameter value corresponding to the closest point
+  /// \param dist Distance between input point and found closest point
+    void
+      closestBoundaryPoint(Point& pnt,     // Input point
+			   Point& clo_pnt, // Found closest point
+			   int& idx,          // Index of surface where the closest point is found
+			   double clo_par[],  // Parameter value corresponding to the closest point
+			   double& dist);     // Distance between input point and found closest point
+
   /// Closest point between a given point and this surface model
   /// Returns one point
   /// \param pnt Input point
@@ -304,7 +319,11 @@ class GO_API SurfaceModel : public CompositeModel
   /// \return Closest point
   ftPoint closestPoint(const Point& point);
 
-  /// Closest point between a given point and this surface model
+ void closestPoint(Point& point, int seed_ix, double seed[],
+		   Point& clo_pt, int& idx, double clo_par[],
+		   double& dist);
+
+ /// Closest point between a given point and this surface model
   /// \param point Input point
   /// \return Closest point
   ftPoint closestPoint(const ftPoint& point) { return closestPoint(point.position()); }
@@ -913,7 +932,7 @@ class GO_API SurfaceModel : public CompositeModel
 		      std::vector<std::pair<double,double> >& crv_bound,
 		      bool compute_curves=true) const;
 
-  ftPoint closestPointLocal(const ftPoint& point) const;
+  ftPoint closestPointLocal(const ftPoint& point, bool use_seed=false) const;
 
   void localExtreme(ftSurface *face, Point& dir, 
 		    Point& ext_pnt, int& ext_id,

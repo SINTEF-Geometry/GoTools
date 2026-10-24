@@ -129,6 +129,30 @@ ParamCurve::point(double tpar,
     return pts;
 }
 
+//===========================================================================
+  double ParamCurve::curvatureRadius(double tpar, bool from_right) const
+//===========================================================================
+  {
+    double eps = 1.0e-10;
+    int dim = dimension();
+    if (dim > 3)
+      return -1.0;
+    int derivs = 2;
+    std::vector<Point> der(derivs+1, Point());
+    point(der, tpar, derivs, from_right);
+    double kappa;
+    if (dim == 1)
+      kappa = fabs(der[2][0])/pow(1.0+der[1].length(), 3);
+    else if (dim == 2)
+      kappa = pow(der[1].length(), 3)/fabs(der[1][0]*der[2][1]-der[1][1]*der[2][0]);
+    else
+      {
+	Point vec = der[1].cross(der[2]);
+	kappa = vec.length()/pow(der[1].length(), 3);
+      }
+    return (kappa < eps) ? -1 : 1.0/kappa;
+  }
+  
 
 //===========================================================================
 bool ParamCurve::isClosed()

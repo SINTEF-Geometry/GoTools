@@ -125,7 +125,7 @@ public:
 
     /// Check if the given parameter pair is located on the endpoint of some
     /// curve in the curve loop
-    bool isOnCorner(const Array<double, 2>& point, 
+    virtual bool isOnCorner(const Array<double, 2>& point, 
 		    double tolerance) const;
 
     /// Find the parameter pair contained in the domain that is closest (using
