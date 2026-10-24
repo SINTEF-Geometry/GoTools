@@ -290,6 +290,11 @@ namespace SplineUtils {
 						 const std::vector<double> new_knots_u,
 						 const std::vector<double> new_knots_v);
 
+  void extractMissingKnots(std::vector<double>& union_vec, 
+			   std::vector<double>& vec,
+			   double tol, int order,
+			   std::vector<double>& resvec);
+
 } // End of namespace SplineUtils
 
 } // End of namespace Go
