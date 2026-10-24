@@ -42,6 +42,9 @@
 #include "GoTools/viewlib/vol_and_lr/DataHandlerVolAndLR.h"
 #include "GoTools/viewlib/vol_and_lr/RectangularVolumePropertySheet.h"
 #include "GoTools/viewlib/vol_and_lr/gvRectangularVolumePaintable.h"
+#include "GoTools/viewlib/vol_and_lr/LRSurfaceTesselator.h"
+#include "GoTools/viewlib/vol_and_lr/LRSurfacePropertySheet.h"
+#include "GoTools/viewlib/vol_and_lr/gvLRSurfacePaintable.h"
 
 #include "GoTools/viewlib/gvRectangularSurfacePaintable.h"
 #include "GoTools/viewlib/RectangularSurfacePropertySheet.h"
@@ -122,13 +125,14 @@ void DataHandlerVolAndLR::create(shared_ptr<GeomObject> obj,
 	}
 #endif
 
-	shared_ptr<RectangularSurfaceTesselator> te(new RectangularSurfaceTesselator(sf));
-	shared_ptr<gvRectangularSurfacePaintable> pa
-	  (new gvRectangularSurfacePaintable(*(te->getMesh()), col, id));
+
+	shared_ptr<LRSurfaceTesselator> te(new LRSurfaceTesselator(sf));
+	shared_ptr<gvLRSurfacePaintable> pa
+	  (new gvLRSurfacePaintable(*(te->getMesh()), col, id));
 	shared_ptr<ParamSurface> psf = 
 	  dynamic_pointer_cast<ParamSurface, GeomObject>(obj);
-	shared_ptr<gvPropertySheet> ps(new RectangularSurfacePropertySheet(te.get(), pa.get(), 
-									   psf));
+	shared_ptr<gvPropertySheet> ps(new LRSurfacePropertySheet(te.get(), pa.get(), 
+								  psf));
 	tesselator_ = te;
 	paintable_ = pa;
 	property_sheet_ = ps;

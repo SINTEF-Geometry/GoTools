@@ -65,6 +65,10 @@ public slots:
     void translate_to_origin(); // All selected objects are translated by the center of their bounding box.
     void move_vertices_to_origin(); // All selected objects are translated by the center of their bounding box.
 
+    virtual void
+    changeSurfaceResolutions(int new_u_res,
+			     int new_v_res); // Change resolution of
+					     // all selected sfs.
 protected:
     void buildExtraGUI();
 

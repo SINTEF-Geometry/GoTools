@@ -1273,8 +1273,11 @@ LRSplineUtils::refine_mesh(Direction2D d, double fixed_val, double start,
       // check that the proposed multiplicity modification is legal
       for (int i = start_ix; i < end_ix; ++i) {
 	const int cur_m = mesh.nu(d, fixed_ix, i, i+1);
-	if (absolute && (cur_m > mult)) 
-	  THROW("Cannot decrease multiplicity.");
+	if (absolute && (cur_m > mult))
+	  {
+	    //THROW("Cannot decrease multiplicity.");
+	    mult = cur_m;
+	  }
 	else if (!absolute && (cur_m+mult > spline_degree + 1)) 
 	  THROW("Cannot increase multiplicity.");
       }

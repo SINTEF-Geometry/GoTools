@@ -40,6 +40,7 @@
 
 #include "GoTools/viewlib/vol_and_lr/gvApplicationVolAndLR.h"
 #include "GoTools/viewlib/gvView.h"
+#include "GoTools/viewlib/vol_and_lr/LRSurfaceTesselator.h"
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include "GoTools/geometry/BoundedSurface.h"
@@ -301,5 +302,52 @@ GeneralMesh* gvApplicationVolAndLR::getMesh(int object_id)
 	gen_mesh = reg_vol_tess->getMesh().get();
     }
 
+    // 2D LR spline surface
+    LRSurfaceTesselator* lr_surf_tess = dynamic_cast<LRSurfaceTesselator*>(tess);
+    if (lr_surf_tess)
+    {
+	gen_mesh = lr_surf_tess->getMesh().get();
+    }
+
+
     return gen_mesh;
 }
+
+//===========================================================================
+void gvApplicationVolAndLR::changeSurfaceResolutions(int new_u_res, int new_v_res)
+//===========================================================================
+{
+    for (int i = 0; i < data_.numObjects(); ++i)
+	if (data_.getSelectedStateObject(i)) {
+	    RectangularSurfaceTesselator* tess =
+		dynamic_cast<RectangularSurfaceTesselator*>(data_.tesselator(i).get());
+	    int u_res = -1, v_res = -1;
+	    if (tess != 0) {
+		tess->getRes(u_res, v_res);
+		if ((u_res != new_u_res) || (v_res != new_v_res)) {
+		    tess->changeRes(new_u_res, new_v_res);
+		}
+	    } else {
+		ParametricSurfaceTesselator* tess =
+		    dynamic_cast<ParametricSurfaceTesselator*>(data_.tesselator(i).get());
+		if (tess != 0) {
+		    tess->getRes(u_res, v_res);
+		    if ((u_res != new_u_res) || (v_res != new_v_res)) {
+			tess->changeRes(new_u_res, new_v_res);
+		    }
+		}
+		else
+		  {
+		    LRSurfaceTesselator* tess =
+		      dynamic_cast<LRSurfaceTesselator*>(data_.tesselator(i).get());
+		    if (tess != 0) {
+		      tess->getRes(u_res, v_res);
+		      if ((u_res != new_u_res) || (v_res != new_v_res)) {
+			tess->changeRes(new_u_res, new_v_res);
+		      }
+		    }
+		  }
+	    }
+	}
+}
+
