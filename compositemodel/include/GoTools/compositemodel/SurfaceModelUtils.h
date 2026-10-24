@@ -148,6 +148,24 @@ namespace Go
     void triangulateFaces(std::vector<shared_ptr<ftSurface> >& faces,
 			  shared_ptr<ftPointSet>& triang, double tol);
 
+    void triangulateModel(shared_ptr<SurfaceModel>& model, double density,
+			  shared_ptr<ftPointSet>& triang);
+
+    void samplePointsModel(shared_ptr<SurfaceModel>& model,
+			   double density,
+			   shared_ptr<ftPointSet>& triang);
+    
+    void getFaceInnerSamplePoints(shared_ptr<ftSurface>& face, 
+				  double density,
+				  shared_ptr<ftPointSet>& points);
+
+    void getBoundarySamplePoints(shared_ptr<SurfaceModel>& model, 
+				 double density,
+				 shared_ptr<ftPointSet>& points);
+    
+    void performModelTriangulate(shared_ptr<SurfaceModel>& model, 
+				 shared_ptr<ftPointSet>& triang,
+				 double density);
     void 
       reduceUnderlyingSurface(shared_ptr<BoundedSurface>& bd_sf,
 			      std::vector<shared_ptr<CurveOnSurface> >& cvs);

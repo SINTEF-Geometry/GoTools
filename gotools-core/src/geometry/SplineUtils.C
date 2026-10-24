@@ -662,6 +662,33 @@ shared_ptr<SplineSurface> GO_API SplineUtils::insertKnots(const Go::SplineSurfac
 
 }
 
+//==============================================================================
+void SplineUtils::extractMissingKnots(vector<double>& union_vec, 
+				     vector<double>& vec,
+				     double tol, int order,
+				     vector<double>& resvec)
+//==============================================================================
+{
+  int ki, kj;
+  int size1 = (int)vec.size() - order;
+  int size2 = (int)union_vec.size() - order;
+  for (ki=order, kj=order; ki<size1 || kj<size2; )
+    {
+      if (fabs(vec[ki]-union_vec[kj]) < tol)
+	{
+	  ki++;
+	  kj++;
+	}
+      else if (union_vec[kj] < vec[ki])
+	{
+	  resvec.push_back(union_vec[kj]);
+	  kj++;
+	}
+      else
+	ki++;
+    }
+}
+
 
 } // namespace Go
 

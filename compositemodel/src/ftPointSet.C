@@ -200,25 +200,64 @@ bool ftSamplePoint::isNeighbour(ftSamplePoint* other) const
 	pnt = next_[ki]->next_[kj];
 	size_t kh = 0;
 	for (kh=0; kh<pnt->next_.size(); ++kh)
-	  if (pnt->next_[kh] == this)
-	    {
-	      // A triangle is found. Arrange points after increasing
-	      // index
-	      vector<int> index(3);
-	      index[0] = index_;
-	      index[1] = next_[ki]->index_;
-	      index[2] = pnt->index_;
-	      std::sort(index.begin(), index.end());
-	      auto it = std::find(triangles.begin(), triangles.end(), index);
+	  {
+	    size_t curr_size = triangles.size();
+	    if (pnt->next_[kh] == this)
+	      {
+		// A triangle is found. 
+		vector<int> index(3);
+		index[0] = index_;
+		index[1] = next_[ki]->index_;
+		index[2] = pnt->index_;
+		
+		// Arrange points after increasing index
+		std::sort(index.begin(), index.end());
+		auto it = std::find(triangles.begin(), triangles.end(), index);
 
-	      if (it == triangles.end())
-		triangles.push_back(index);
-	      break;
-	    }
+		if (it == triangles.end())
+		  {
+		    // Check if the triangle contains an inner node
+		    bool tri_OK = true;
+		    vector<PointIter> adj1(next_.begin(), next_.end());
+		    vector<PointIter> adj2(pnt->next_.begin(), pnt->next_.end());
+		    vector<PointIter> adj3(pnt->next_[kh]->next_.begin(),
+					    pnt->next_[kh]->next_.end());
+		    std::sort(adj1.begin(), adj1.end());
+		    std::sort(adj2.begin(), adj2.end());
+		    vector<PointIter> common1_2;
+		    std::set_intersection(adj1.begin(), adj1.end(),
+					  adj2.begin(), adj2.end(),
+					  std::back_inserter(common1_2));
+		    if (common1_2.size() > 0)
+		      {
+			std::sort(adj3.begin(), adj3.end());
+			vector<PointIter> common;
+			std::set_intersection(common1_2.begin(), common1_2.end(),
+					      adj3.begin(), adj3.end(),
+					      std::back_inserter(common));
+			for (size_t kr=0; kr<common.size(); ++kr)
+			  {
+			    int num_adj = common[kr]->getNmbNeighbour();
+			    if (num_adj == 3)
+			      {
+				tri_OK = false;
+				break;
+			      }
+			  }
+		      }
+
+		    if (tri_OK)
+		      {
+			triangles.push_back(index);
+			break;
+		      }
+		  }
+
+	      }
+	  }
 	// if (kh<pnt->next_.size())
 	//     break;
       }
-	      
 }
 
 //===========================================================================

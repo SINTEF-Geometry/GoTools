@@ -146,6 +146,46 @@ class ApproxSurf
 	       bool repar=true);
 
 
+     /// Constructor where the user specifies a spline surface that should be
+    /// modified, the points to approximate and their parameter values, as well
+    /// as the geometric tolerance.  The surface that is given as argument is not 
+    /// copied internally, only pointed to, so it \em will be modified.
+    /// \param srf the surface that will be modified to approximate the points.
+    ///            Assumed to contain k-regular knots.
+    /// \param points vector containing the coordinates of the points that this 
+    ///               surface should interpolate.  They are stored in
+    ///               "xyzxyz...-fashion".
+    /// \param parvals vector containing the parameter values of the points given in
+    ///                the 'points' vector.  They are stored in "uvuv...-fashion".
+    /// \param pointwgts vector containing individual approximation weights for each
+    ///                point
+    /// \param dim spatial dimension of the points (usually 3).
+    /// \param aepsge geometric tolerance to use internally
+    /// \param constdir The points \em will be reparameterized internally according
+    ///                 to their spatial position with respect to the surface that 
+    ///                 shall be generated.  However, they might be reparameterized
+    ///                 in both their u and v parameters, only in their u parameters
+    ///                 or only in their v parameters.  The user can specify this 
+    ///                 with 'constdir'.  If 'constdir' is set to 0, the points will
+    ///                 be reparameterized in  both u and v.  If 'constdir' is set to
+    ///                 1, they will only be reparameterized in the v parameter. 
+    ///                 If 'constdir' is set to 2, they will only be reparameterized in
+    ///                 the u parameter.
+    ApproxSurf(shared_ptr<SplineSurface>& srf,
+	       const std::vector<double>& points, 
+	       const std::vector<double>& parvals,
+	       const std::vector<double>& pointwgts,
+	       int dim, double aepsge, int constdir = 0,
+	       bool approx_orig = false,
+	       bool repar=true);
+
+
+    ApproxSurf(const std::vector<double>& points, 
+	       const std::vector<double>& parvals,
+	       int order1, int order2, int num_coef1, int num_coef2,
+	       int dim, double aepsge, bool repar=true);
+
+
     /// Destructor
     ~ApproxSurf();
 
@@ -168,6 +208,11 @@ class ApproxSurf
 	{
 	    int fix = (fix_boundary) ? 1 : 0;
 	    edge_derivs_[0] = edge_derivs_[1] = edge_derivs_[2] = edge_derivs_[3] = fix;
+	}
+
+    void setFixCorners(bool fix_corners)
+	{
+	  corner_fix_ = fix_corners;
 	}
 
     /// Decide whether specific edges of the surface's boundary should be kept fixed
@@ -289,6 +334,7 @@ class ApproxSurf
     int dim_;
     std::vector<double> points_;
     std::vector<double> parvals_;
+    std::vector<double> pt_weight_;
     int pts_stabil_;
     std::vector<double> norm_points_;
     std::vector<double> norm_parvals_;
@@ -298,6 +344,7 @@ class ApproxSurf
     double c1fac1_, c1fac2_;
   int acc_criter_;
   double acc_frac_;
+  bool corner_fix_;
 
     /// Generate an initial curve representing the spline space
     int makeInitSurf(std::vector<shared_ptr<SplineCurve> > &crvs, 

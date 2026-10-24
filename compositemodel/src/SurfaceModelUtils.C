@@ -40,7 +40,9 @@
 #include "GoTools/compositemodel/ftSurface.h"
 #include "GoTools/compositemodel/CompositeCurve.h"
 #include "GoTools/compositemodel/ftPointSet.h"
+#include "GoTools/compositemodel/ftSurfaceSetPoint.h"
 #include "GoTools/compositemodel/AdaptSurface.h"
+#include "GoTools/compositemodel/cmUtils.h"
 #include "GoTools/intersections/Identity.h"
 #include "GoTools/geometry/BoundedSurface.h"
 #include "GoTools/geometry/BoundedUtils.h"
@@ -63,6 +65,8 @@
 #include "GoTools/tesselator/TesselatorUtils.h"
 #include "GoTools/creators/CurveCreators.h"
 #include "GoTools/geometry/SISLconversion.h"
+#include "GoTools/compositemodel/ttlPoint.h"
+#include "GoTools/compositemodel/ttlTriang.h"
 #include "sislP.h"
 
 #include <fstream>
@@ -2476,6 +2480,695 @@ void SurfaceModelUtils::triangulateFaces(vector<shared_ptr<ftSurface> >& faces,
 #endif
 
 }
+
+//===========================================================================
+void SurfaceModelUtils::triangulateModel(shared_ptr<SurfaceModel>& model, double density,
+					 shared_ptr<ftPointSet>& triang)
+//===========================================================================
+{
+  samplePointsModel(model, density, triang);
+  performModelTriangulate(model, triang, density);
+}
+
+//===========================================================================
+void SurfaceModelUtils::samplePointsModel(shared_ptr<SurfaceModel>& model,
+					  double density,
+					  shared_ptr<ftPointSet>& triang)
+//===========================================================================
+{
+  // Compute sampling points at edges
+  getBoundarySamplePoints(model, density, triang);
+#ifdef DEBUG
+  std::ofstream of("bd_nodes.g2");
+  of << "400 1 0 4 0 255 0 255" << std::endl;
+  of << triang->size() << std::endl;
+  for (int ka=0; ka<triang->size(); ++ka)
+    of << (*triang)[ka]->getPoint() << std::endl;
+#endif
+
+  int bd_num = triang->size();
+  
+  // Compute sampling points in the inner of the faces
+  int num_faces = model->nmbEntities();
+  for (int ki=0; ki<num_faces; ++ki)
+    {
+      shared_ptr<ftSurface> face = model->getFace(ki);
+      getFaceInnerSamplePoints(face, density, triang);
+    }
+  
+#ifdef DEBUG
+  std::ofstream of2("inner_nodes.g2");
+  of2 << "400 1 0 4 255 0 0 255" << std::endl;
+  of2 << triang->size()-bd_num << std::endl;
+  for (int ka=bd_num; ka<triang->size(); ++ka)
+    of2<< (*triang)[ka]->getPoint() << std::endl;
+
+  std::ofstream of0("pretrimesh.g2");
+
+  vector<Vector3D> edgs;
+  for (int ka=0; ka<triang->size(); ++ka)
+    {
+      Vector3D pos = (*triang)[ka]->getPoint();
+      vector<ftSamplePoint*> next = (*triang)[ka]->getNeighbours();
+      for (size_t ki=0; ki<next.size(); ++ki)
+	{
+	  edgs.push_back(pos);
+	  edgs.push_back(next[ki]->getPoint());
+	}
+    }
+  
+  of0 << "410 1 0 4 0 0 255 255" << std::endl;
+  of0 << edgs.size()/2 << std::endl;
+  for (size_t ki=0; ki<edgs.size(); ki+=2)
+    {
+      of0 << edgs[ki] << " " << edgs[ki+1] << std::endl;
+    }
+#endif
+}
+
+//===========================================================================
+void SurfaceModelUtils::getFaceInnerSamplePoints(shared_ptr<ftSurface>& face, 
+						 double density,
+						 shared_ptr<ftPointSet>& points)
+//===========================================================================
+{
+  shared_ptr<ParamSurface> surf = face->surface();
+  shared_ptr<ftFaceBase> faceb = face;
+
+  // Get resolution
+  int min_num = 1;
+  int max_num = 100;
+  double lenfac = 0.9;
+  double dfac = 0.4;
+
+  RectDomain dom = surf->containingDomain();
+  int cv_dir = 0;
+  int pt_dir = 1;
+  double len_u1, len_u2, len_v1, len_v2;
+  GeometryTools::estimateIsoCurveLength(*surf, false, dom.umin(), len_u1);
+  GeometryTools::estimateIsoCurveLength(*surf, false, dom.umax(), len_u2);
+  GeometryTools::estimateIsoCurveLength(*surf, true, dom.vmin(), len_v1);
+  GeometryTools::estimateIsoCurveLength(*surf, true, dom.vmax(), len_v2);
+  double frac1 = std::min(len_u1, len_u2)/std::max(len_u1, len_u2);
+  double frac2 = std::min(len_v1, len_v2)/std::max(len_v1, len_v2);
+  int bd = 0;  // Indicates inner point
+  double u_size, v_size;
+  surf->estimateSfSize(u_size, v_size);
+  
+  if (lenfac*v_size > u_size ||
+      (v_size > u_size &&  lenfac*v_size <= u_size && frac1 > frac2))
+    {
+      cv_dir = 1;
+      pt_dir = 0;
+    }
+  
+  // Fetch constant parameter curves in the selected curve direction
+  double u1 = (cv_dir == 0) ? dom.umin() : dom.vmin();
+  double u2 = (cv_dir == 0) ? dom.umax() : dom.vmax();
+  double len = (cv_dir == 0) ? u_size : v_size;
+  int num_cv = (int)(len/density) - 1;
+  num_cv = std::min(max_num, std::max(num_cv, min_num));
+  double udel = (u2 - u1)/(double)(num_cv+2);
+  double tol1 = std::max(1.0e-7, 1.0e-5*(u2-u1));
+  double par[2];
+
+  size_t kr;
+  par[cv_dir] = u1+udel;
+  double u_stop = u2 - 0.1*udel;  // To avoid boundary points due to numerics
+  while (par[cv_dir] < u_stop)
+    {
+      vector<shared_ptr<ParamCurve> > crvs = 
+	surf->constParamCurves(par[cv_dir], cv_dir /*false*/);
+
+	if (crvs.size() == 0)
+	  {
+	    par[cv_dir] += udel;
+	    continue;  // Outside domain of surface
+	  }
+
+	// Evaluate sampling points
+	for (kr=0; kr<crvs.size(); ++kr)
+	  {
+	    double len2 = crvs[kr]->estimatedCurveLength();
+	    if (len2 < dfac*density)
+	      continue;
+	    int nmb = (int)(len2/density) - 1;
+	    nmb = std::min(max_num, std::max(nmb, min_num));
+	    double v1 = crvs[kr]->startparam();
+	    double v2 = crvs[kr]->endparam();
+	    double vdel = (v2 - v1)/(double)(nmb+1);
+	    double tol2 = std::max(1.0e-7, 1.0e-5*(v2-v1));
+	    par[pt_dir] = v1 + vdel;
+
+	    double v_stop = v2 - 0.1*vdel;
+	    while (par[pt_dir] < v_stop)
+	      {
+		Point pos = crvs[kr]->point(par[pt_dir]);
+		Vector3D pnt3D(pos[0], pos[1], pos[2]);
+		Vector2D pntpar(par[0], par[1]);
+		shared_ptr<ftSurfaceSetPoint> ftpnt(new ftSurfaceSetPoint(pnt3D, 
+									  bd,
+									  faceb,
+									  pntpar));
+		ftpnt->setPar(pntpar);
+		points->addEntry(ftpnt);
+		par[pt_dir] += vdel;
+	      }
+	  }
+	par[cv_dir] += udel;
+    }
+}
+
+int getVertexIndex(vector<shared_ptr<Vertex> >& vertices,
+		   shared_ptr<Vertex> vx)
+{
+  int ix = -1;
+  for (size_t ki=0; ki<vertices.size(); ++ki)
+    if (vertices[ki].get() == vx.get())
+      return (int)ki;
+
+  return ix;
+}
+
+//===========================================================================
+void SurfaceModelUtils::getBoundarySamplePoints(shared_ptr<SurfaceModel>& model, 
+						double density,
+						shared_ptr<ftPointSet>& points)
+//===========================================================================
+{
+  int min_num = 1;
+  int max_num = 100;
+  int inner = 2; 
+  int outer = 1;
+  
+  // Fetch all vertices in the model and define sample points corresponding
+  // to the vertices
+  vector<shared_ptr<Vertex> > vertices, bd_vertices;
+  model->getAllVertices(vertices);
+  model->getBoundaryVertices(bd_vertices);
+
+  for (size_t ki=0; ki<vertices.size(); ++ki)
+    {
+      int bd = 2;
+      for (size_t kj=0; kj<bd_vertices.size(); ++kj)
+	if (vertices[ki].get() == bd_vertices[kj].get())
+	  {
+	    bd = 1;
+	    break;
+	  }
+      
+      Point vx_pos = vertices[ki]->getVertexPoint();
+      Vector3D pos3d(vx_pos[0], vx_pos[1], vx_pos[2]);
+      shared_ptr<ftSurfaceSetPoint> sfsetpnt(new ftSurfaceSetPoint(pos3d, bd));
+      
+      // Fetch associated faces and corresponding parameter values
+      vector<pair<ftSurface*, Point> > face_par = vertices[ki]->getFaces();
+
+      // Add face and parameter information to surface set point
+      for (size_t kj=0; kj<face_par.size(); ++kj)
+	{
+	  Vector2D par(face_par[kj].second[0], face_par[kj].second[1]);
+	  shared_ptr<ftSurface> face2 = model->fetchAsSharedPtr(face_par[kj].first);
+	  shared_ptr<ftFaceBase> face2b = face2;
+	  sfsetpnt->addPair(face2b, par);
+	}
+      points->addEntry(sfsetpnt);
+    }
+
+  vector<shared_ptr<ftEdge> > bd_edges = model->getBoundaryEdges();
+  vector<shared_ptr<ftEdge> > inner_edges = model->getUniqueInnerEdges();
+  for (size_t ki=0; ki<bd_edges.size(); ++ki)
+    {
+      // Associated face
+      ftFaceBase *face = bd_edges[ki]->face();
+      shared_ptr<ftSurface> face2_tmp = model->fetchAsSharedPtr(face);
+      shared_ptr<ftFaceBase> face2 = face2_tmp;
+
+      // Previous sampling point at start vertex
+      shared_ptr<Vertex> start_vx = bd_edges[ki]->getVertex(true);
+      int start_ix = getVertexIndex(vertices, start_vx);
+      ftSamplePoint *prev = (*points)[start_ix];
+      
+      // Compute number of sampling points
+      double len = bd_edges[ki]->estimatedCurveLength();
+      int num_sample = (int)(len/density) - 1;
+      num_sample = std::min(max_num, std::max(num_sample, min_num));
+
+      double tmin = bd_edges[ki]->tMin();
+      double tmax = bd_edges[ki]->tMax();
+      double tdel = (tmax - tmin)/(double)(num_sample + 1);
+      double tpar = tmin + tdel;
+      for (int ka=0; ka<num_sample; ++ka, tpar+=tdel)
+	{
+	  // Position
+	  Point pos = bd_edges[ki]->point(tpar);
+	  Vector3D pos3d(pos[0], pos[1], pos[2]);
+	  shared_ptr<ftSurfaceSetPoint> sfsetpnt(new ftSurfaceSetPoint(pos3d, outer));
+
+	  // Associated parameter value
+	  Point par = bd_edges[ki]->faceParameter(tpar);;
+	  sfsetpnt->addPair(face2, Vector2D(par[0], par[1]));
+	  points->addEntry(sfsetpnt);
+
+	  sfsetpnt->addNeighbour(prev);
+	  prev->addNeighbour(sfsetpnt.get());
+
+	  if (ka == num_sample-1)
+	    {
+	      // Next sampling point at end vertex
+	      shared_ptr<Vertex> end_vx = bd_edges[ki]->getVertex(false);
+	      int end_ix = getVertexIndex(vertices, end_vx);
+	      ftSamplePoint *next = (*points)[end_ix];
+	      sfsetpnt->addNeighbour(next);
+	      next->addNeighbour(sfsetpnt.get());
+	    }
+
+	  prev = sfsetpnt.get();
+	}
+    }
+  
+  for (size_t ki=0; ki<inner_edges.size(); ++ki)
+    {
+      // Associated face
+      ftFaceBase *face = inner_edges[ki]->face();
+      shared_ptr<ftSurface> face_tmp = model->fetchAsSharedPtr(face);
+      shared_ptr<ftFaceBase> face_shr = face_tmp;
+
+      // Previous sampling point at start vertex
+      shared_ptr<Vertex> start_vx = inner_edges[ki]->getVertex(true);
+      int start_ix = getVertexIndex(vertices, start_vx);
+      ftSamplePoint *prev = (*points)[start_ix];
+      
+      // Compute number of sampling points
+      double len = inner_edges[ki]->estimatedCurveLength();
+      int num_sample = (int)(len/density) - 1;
+      num_sample = std::min(max_num, std::max(num_sample, min_num));
+
+      // Adjacent face
+      ftEdgeBase *twin = inner_edges[ki]->twin();
+      ftEdge *twin2 = twin->geomEdge();
+      bool turned = (twin2->getVertex(false).get() == start_vx.get());
+      ftFaceBase *face2 = twin->face();
+      shared_ptr<ftSurface> face2_tmp = model->fetchAsSharedPtr(face2);
+      shared_ptr<ftFaceBase> face2_shr = face2_tmp;
+
+      double tmin = inner_edges[ki]->tMin();
+      double tmax = inner_edges[ki]->tMax();
+      double tmin2 = twin->tMin();
+      double tmax2 = twin->tMax();
+      double tdel = (tmax - tmin)/(double)(num_sample + 1);
+      double tpar = tmin + tdel;
+      double tpar2;
+      for (int ka=0; ka<num_sample; ++ka, tpar+=tdel)
+	{
+	  // Position
+	  Point pos = inner_edges[ki]->point(tpar);
+	  Vector3D pos3d(pos[0], pos[1], pos[2]);
+	  shared_ptr<ftSurfaceSetPoint> sfsetpnt(new ftSurfaceSetPoint(pos3d, inner));
+	  // Associated  parameter value
+	  Point par = inner_edges[ki]->faceParameter(tpar);;
+	  sfsetpnt->addPair(face_shr, Vector2D(par[0], par[1]));
+
+	  // Parameter value for adjacent surface
+	  double td2 = (tpar - tmin)*(tmax2 - tmin2)/(tmax - tmin);
+	  tpar2 = (turned) ? tmax2 - td2 : tmin2 + td2;
+	  Point par2 = twin2->faceParameter(tpar2);
+	  sfsetpnt->addPair(face2_shr, Vector2D(par2[0], par2[1]));
+	  
+	  points->addEntry(sfsetpnt);
+
+	  sfsetpnt->addNeighbour(prev);
+	  prev->addNeighbour(sfsetpnt.get());
+
+	  if (ka == num_sample-1)
+	    {
+	      // Next sampling point at end vertex
+	      shared_ptr<Vertex> end_vx = inner_edges[ki]->getVertex(false);
+	      int end_ix = getVertexIndex(vertices, end_vx);
+	      ftSamplePoint *next = (*points)[end_ix];
+	      sfsetpnt->addNeighbour(next);
+	      next->addNeighbour(sfsetpnt.get());
+	    }
+
+	  prev = sfsetpnt.get();
+	}
+      
+    }
+}
+
+ftFaceBase* commonFace(vector<ftSurfaceSetPoint*>& pol_pts)
+{
+  if (pol_pts.size() < 1)
+    return 0;
+  
+  int num_face = pol_pts[0]->nmbFaces();
+  vector<ftFaceBase*> faces(num_face);
+  for (int ka=0; ka<num_face; ++ka)
+    faces[ka] = pol_pts[0]->face(ka).get();
+
+  for (size_t ki=1; ki<pol_pts.size(); ++ki)
+    {
+      for (int ka=(int)faces.size()-1; ka>=0; --ka)
+	{
+	  bool contained = pol_pts[ki]->containsFace(faces[ka]);
+	  if (!contained)
+	    faces.erase(faces.begin()+ka);
+	}
+    }
+
+  if (faces.size() == 1)
+    return faces[0];
+  else
+    return 0;
+}
+
+//===========================================================================
+void SurfaceModelUtils::performModelTriangulate(shared_ptr<SurfaceModel>& model, 
+						shared_ptr<ftPointSet>& points,
+						double density)
+//===========================================================================
+{
+  double eps = 1.0e-9;
+  double angtol = 0.01; //model->getTolerances().kink;
+  double tol = model->getTolerances().gap;
+  double len_lim = 2.0*density;
+  int num_faces = model->nmbEntities();
+  vector<vector<ttlPoint*> > faces_points(num_faces);
+  
+  // Fetch the sample points belonging to the individual faces
+  for (int ki = 0; ki < num_faces; ++ki)
+    {
+      // For each surface we rescale parameter domain of spline/underlying surface.
+      // Parameter values are then mapped accordingly.
+      shared_ptr<ftSurface> face = model->getFace(ki);
+      shared_ptr<ParamSurface> surf = face->surface();
+      RectDomain rect_dom = surf->containingDomain();
+      RectDomain new_dom = cmUtils::geometricParamDomain(surf.get());
+      for (size_t kj = 0; kj < points->size(); ++kj)
+	{
+	  ftSurfaceSetPoint* sspnt = dynamic_cast<ftSurfaceSetPoint*>((*points)[kj]);
+	if (sspnt == 0)
+	  continue;
+
+	for (int km = 0; km < sspnt->nmbFaces(); ++km)
+	  {
+	    if (face.get() == sspnt->face(km).get())
+	      {
+		double u = sspnt->parValue(km)[0];
+		double v = sspnt->parValue(km)[1];
+		double new_u = (new_dom.umax() - new_dom.umin())*(u - rect_dom.umin())/
+		  (rect_dom.umax() - rect_dom.umin()) + new_dom.umin();
+		double new_v = (new_dom.vmax() - new_dom.vmin())*(v - rect_dom.vmin())/
+		  (rect_dom.vmax() - rect_dom.vmin()) + new_dom.vmin();
+		faces_points[ki].push_back(new ttlPoint(sspnt, new_u, new_v));
+	      }
+	    }
+	}
+    }
+
+  vector<hetriang::Triangulation> triang(faces_points.size());
+  bool missing_face_points = false;
+    for (int ki = 0; ki < num_faces; ++ki)
+      {
+        if (faces_points[ki].size() == 0)
+        {
+            missing_face_points = true;
+            break;
+        }
+	triang[ki].createDelaunay(faces_points[ki].begin(),
+				  faces_points[ki].end());
+#ifdef DEBUG
+	bool ok = triang[ki].checkDelaunay();
+	std::cout << "Delaunay: " << ok << std::endl;
+#endif
+      }
+
+    if (missing_face_points)
+      {
+	// Cleanup
+	for (int ki = 0; ki < num_faces; ++ki)
+	  {
+            for (size_t kj = 0; kj < faces_points[ki].size(); ++kj)
+            {
+	      if (faces_points[ki][kj])
+		delete faces_points[ki][kj]; // No more need for object.
+            }
+        }
+	return;
+      }
+
+#ifdef DEBUG
+    std::ofstream of("tri_edgs.g2");
+    std::ofstream ofn("not_transferred.g2");
+#endif
+    // We run through the vector, updating structure for each face.
+    vector<hetriang::Edge*> l_bdtri;
+    for (size_t kr = 0; kr < triang.size(); ++kr)
+      {
+	const list<hetriang::Edge*>& l_edges = triang[kr].getLeadingEdges();
+	
+	// For triangulation of current face, we run through all triangles.
+	list<hetriang::Edge*>::const_iterator leading_edge_it = l_edges.begin();
+	int num = 0;
+	while (leading_edge_it != l_edges.end())
+	  {
+	    // Pre check
+	    hetriang::Edge* tmp_edge = *leading_edge_it;
+	    int num_bd = 0;
+	    shared_ptr<hetriang::Node> tmp_node = tmp_edge->getSourceNode();
+	    bool tmp_bd = (tmp_node->pointIter()->isOnBoundary() ||
+			   tmp_node->pointIter()->isOnSubSurfaceBoundary());
+	    if (tmp_bd)
+	      num_bd++;
+	    for (int km = 1; km < 3; ++km)
+	      {
+		tmp_edge = tmp_edge->getNextEdgeInFace();
+		tmp_node = tmp_edge->getSourceNode();
+		tmp_bd = (tmp_node->pointIter()->isOnBoundary() ||
+			   tmp_node->pointIter()->isOnSubSurfaceBoundary());
+		if (tmp_bd)
+		  num_bd++;
+	      }
+
+	    bool inner = true;
+	    if (num_bd == 3)
+	      {
+// #ifdef DEBUG
+// 		std::cout << "Possible outside triangle" << std::endl;
+// #endif
+		double fac = 1.0/3.0;
+		hetriang::Edge* tmp_edge = *leading_edge_it;
+		vector<ftSurfaceSetPoint*> tri_pts(3);
+		shared_ptr<hetriang::Node> tmp_node = tmp_edge->getSourceNode();
+		tri_pts[0] = tmp_node->pointIter()->asSurfaceSetPoint();
+		vector<Point> par(3);
+		par[0] = Point(tmp_node->x(), tmp_node->y());
+		Vector2D mid_par = fac*Vector2D(par[0][0], par[0][1]);
+		for (int km = 1; km < 3; ++km)
+		  {
+		    tmp_edge = tmp_edge->getNextEdgeInFace();
+		    tmp_node = tmp_edge->getSourceNode();
+		    par[km] = Point(tmp_node->x(), tmp_node->y());
+		    tri_pts[km] = tmp_node->pointIter()->asSurfaceSetPoint();
+		    mid_par += fac*Vector2D(par[km][0], par[km][1]);
+		  }
+		double min_ang = M_PI;
+		double max_len = 0.0;
+		for (int km=0; km<3; ++km)
+		  {
+		    int kn1 = (km + 1)%3;
+		    int kn2 = (km + 2)%3;
+		    Point vec1 = par[kn1] - par[km];
+		    Point vec2 = par[kn2] - par[km];
+		    double ang = vec1.angle(vec2);
+		    ang = std::min(ang, M_PI-ang);
+		    min_ang = std::min(min_ang, ang);
+		    max_len = std::max(max_len, vec1.length());
+		  }
+		if (min_ang < angtol || max_len > len_lim)
+		  inner = false;
+		// else
+		//   {
+		//     ftFaceBase *face = commonFace(tri_pts);
+		//     if (face)
+		//       {
+		// 	shared_ptr<ParamSurface> surf = face->surface();
+		// 	const Domain& dom = surf->parameterDomain();
+		// 	int inside = dom.isInDomain2(mid_par, eps);
+		// 	if (!inside)
+		// 	  inner = false;
+		//       }
+		//     else
+		//       inner = false;
+		//   }
+	      }
+
+	    if (num_bd == 3 && inner)
+	      {
+		l_bdtri.push_back(*leading_edge_it);
+		++leading_edge_it; // We iterate to next triangle.
+		continue;
+	      }
+	    
+	    num++;
+	    hetriang::Edge* curr_edge = *leading_edge_it;
+	    shared_ptr<hetriang::Node> source_node = curr_edge->getSourceNode();
+	    shared_ptr<hetriang::Node> target_node = curr_edge->getTargetNode();
+	    bool bd1 = (source_node->pointIter()->isOnBoundary() ||
+			source_node->pointIter()->isOnSubSurfaceBoundary());
+	    bool bd2 = (target_node->pointIter()->isOnBoundary() ||
+			target_node->pointIter()->isOnSubSurfaceBoundary());
+#ifdef DEBUG
+	    vector<Point> nodept;
+	    Point ptn1(source_node->x(), source_node->y(), source_node->z());
+	    Point ptn2(target_node->x(), target_node->y(), target_node->z());
+	    nodept.push_back(ptn1);
+	    nodept.push_back(ptn2);
+#endif
+	    for (int km = 0; km < 3; ++km)
+	      {
+		std::vector<PointIter> neighbours =
+		  source_node->pointIter()->getNeighbours();
+		size_t kj;
+		for (kj = 0; kj < neighbours.size(); ++kj)
+		  if (target_node->pointIter() == neighbours[kj])
+		    break;
+	      
+#ifdef DEBUG
+		if (kj == neighbours.size())
+		  {
+		    std::ofstream ofc("curr_edg.g2");
+		    ofc << "410 0 0 4 155 100 0 255" << std::endl;
+		    ofc << "1" << std::endl;
+		    ofc << ptn1 << " " << ptn2 << std::endl;
+
+		    if (bd1 && bd2 && inner)
+		      {
+			ofn << "410 0 0 4 155 0 100 255" << std::endl;
+			ofn << "1" << std::endl;
+			ofn  << source_node->pointIter()->getPoint();
+			ofn << " " << target_node->pointIter()->getPoint() << std::endl;
+		      }
+		    int stop_edg = 1;
+		  }
+#endif
+		// If break was executed, connection already exists.
+		// If both nodes are on boundary we dont't make the points they
+		// are referring to neighbours (as all boundary points already
+		// have got their maximum of two boundary neighbours).
+		// We could have allowed two points on a subsurfaceboundary
+		// to be neighbours, but it would reault in a conflict when
+		// topology is to be used in the context of a graph.
+		if (kj == neighbours.size() && (!(bd1 && bd2))) //inner) //(!(bd1 && bd2) || num_bd < 3))
+		  {
+		    // Add neighbour 
+		    (source_node->pointIter())->
+		      addNeighbour(target_node->pointIter());
+		    target_node->pointIter()->
+		      addNeighbour(source_node->pointIter());
+		  }
+		    
+		if (km == 2)
+		  break;
+		curr_edge = curr_edge->getNextEdgeInFace();
+		source_node = curr_edge->getSourceNode();
+		target_node = curr_edge->getTargetNode();
+#ifdef DEBUG
+		Point ptn1(source_node->x(), source_node->y(), source_node->z());
+		Point ptn2(target_node->x(), target_node->y(), target_node->z());
+		nodept.push_back(ptn1);
+		nodept.push_back(ptn2);
+#endif
+	      }
+#ifdef DEBUG
+	    of << "410 1 0 4 0 0 0 255" << std::endl;
+	    of << nodept.size()/2 << std::endl;
+	    for (size_t kj=0; kj<nodept.size(); kj+=2)
+	      of << nodept[kj] << " " << nodept[kj+1] << std::endl;
+#endif
+	    ++leading_edge_it; // We iterate to next triangle.
+	  }
+#ifdef DEBUG
+	std::cout << "Num triangles: " << num << std::endl;
+#endif
+      }
+
+    for (size_t kj=0; kj<l_bdtri.size(); ++kj)
+      {
+	hetriang::Edge* curr_edge = l_bdtri[kj];
+	int num_miss = 0;
+	int num_inner_edge = 0;
+	for (int ka=0; ka<3; ++ka)
+	  {
+	    // Compare number of associated triangles to the current
+	    // vertex with the number of neigbours
+	    shared_ptr<hetriang::Node> curr_node = curr_edge->getSourceNode();
+	    ftSamplePoint *curr_point = curr_node->pointIter();
+	    if (curr_point->isOnInnerBoundary())
+	      num_inner_edge++;
+	    curr_edge = curr_edge->getNextEdgeInFace();
+	  }
+	    
+	curr_edge = l_bdtri[kj];
+	for (int ka=0; ka<3; ++ka)
+	  {
+	    // Compare number of associated triangles to the current
+	    // vertex with the number of neigbours
+	    shared_ptr<hetriang::Node> curr_node = curr_edge->getSourceNode();
+	    ftSamplePoint *curr_point = curr_node->pointIter();
+	    int num_neighbour = curr_point->getNmbNeighbour();
+	    vector<vector<int> > curr_tri;
+	    curr_point->getAttachedTriangles(curr_tri);
+	    int out = (curr_point->isOnBoundary() && num_inner_edge<3);
+	    if ((int)curr_tri.size() < num_neighbour-out)
+	      num_miss++;
+	    
+	    curr_edge = curr_edge->getNextEdgeInFace();
+	  }
+	if (num_miss == 3)
+	  {
+	    // An associated face with more than three edges
+	    hetriang::Edge* curr_edge = l_bdtri[kj];
+	    shared_ptr<hetriang::Node> source_node = curr_edge->getSourceNode();
+	    shared_ptr<hetriang::Node> target_node = curr_edge->getTargetNode();
+	    for (int km = 0; km < 3; ++km)
+	      {
+		std::vector<PointIter> neighbours =
+		  source_node->pointIter()->getNeighbours();
+		size_t kj;
+		for (kj = 0; kj < neighbours.size(); ++kj)
+		  if (target_node->pointIter() == neighbours[kj])
+		    break;
+		if (kj == neighbours.size())
+		  {
+		    // Add neighbour 
+		    (source_node->pointIter())->
+		      addNeighbour(target_node->pointIter());
+		    target_node->pointIter()->
+		      addNeighbour(source_node->pointIter());
+		  }
+		    
+		if (km == 2)
+		  break;
+		curr_edge = curr_edge->getNextEdgeInFace();
+		source_node = curr_edge->getSourceNode();
+		target_node = curr_edge->getTargetNode();
+	      }
+	  }
+      }
+
+    // Cleanup
+    for (int ki = 0; ki < num_faces; ++ki)
+      {
+	for (size_t kj = 0; kj < faces_points[ki].size(); ++kj)
+	  {
+	    if (faces_points[ki][kj])
+	      delete faces_points[ki][kj]; // No more need for object.
+	  }
+      }
+}
+
+
 
 //===========================================================================
 void 

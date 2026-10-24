@@ -93,6 +93,7 @@ ApproxSurf::ApproxSurf()
   c1fac1_ = 0.0;
   c1fac2_ = 0.0;
   acc_criter_ =  ACCURACY_MAXDIST;
+  corner_fix_ = false;
 }
 
 //***************************************************************************
@@ -132,6 +133,8 @@ ApproxSurf::ApproxSurf(std::vector<shared_ptr<SplineCurve> >& crvs,
   repar_ = repar;
   refine_ = true;
   mba_ = false;
+  vector<double> tmp_weight(parvals.size()/2, 1.0);
+  pt_weight_ = tmp_weight;
   c1fac1_ = 0.0;
   c1fac2_ = 0.0;
   acc_criter_ =  ACCURACY_MAXDIST;
@@ -142,6 +145,7 @@ ApproxSurf::ApproxSurf(std::vector<shared_ptr<SplineCurve> >& crvs,
   smoothfac_ = 1.0/((curr_srf_->endparam_u() - curr_srf_->startparam_u()) +
 		    (curr_srf_->endparam_v() - curr_srf_->startparam_v()));
 
+  corner_fix_ = false;
 }
 
 //***************************************************************************
@@ -178,6 +182,7 @@ ApproxSurf::ApproxSurf(shared_ptr<SplineSurface>& srf,
   orig_ = approx_orig;
   repar_ = repar;
   refine_ = true;
+  pt_weight_ = std::vector<double>(parvals.size()/2, 1.0);
   mba_ = false;
   c1fac1_ = 0.0;
   c1fac2_ = 0.0;
@@ -191,10 +196,148 @@ ApproxSurf::ApproxSurf(shared_ptr<SplineSurface>& srf,
 
   curr_srf_ = srf;
   init_srf_ = shared_ptr<SplineSurface>(srf->clone());
+  corner_fix_ = false;
 }
 
 //***************************************************************************
 
+ApproxSurf::ApproxSurf(shared_ptr<SplineSurface>& srf,
+		       const std::vector<double>& points, 
+		       const std::vector<double>& parvals,
+		       const std::vector<double>& pointwgts,
+		       int dim, double aepsge, int constdir,
+		       bool approx_orig,
+		       bool repar)
+   //--------------------------------------------------------------------------
+   //     Constructor for class ApproxSurf.
+   //
+   //     Purpose : Initialize class variables
+   //
+   //     Calls   :
+   //
+   //--------------------------------------------------------------------------
+{
+  prevdist_ = maxdist_ = -10000.0;
+  prevav_ = avdist_ = 0;
+  outsideeps_ = 0;
+  dim_ = dim;
+  aepsge_ = aepsge;
+  smoothweight_ = 1.0e-3; // 1.0e-9;
+  constdir_ = constdir;
+  use_normals_ = false;
+  close_belt_ = false;
+  edge_derivs_[0] = edge_derivs_[1] = edge_derivs_[2] = edge_derivs_[3] = 1;
+  pts_stabil_ = 0;
+  norm_stabil_ = 0;
+  orig_ = approx_orig;
+  repar_ = repar;
+  refine_ = true;
+  mba_ = false;
+  c1fac1_ = 0.0;
+  c1fac2_ = 0.0;
+  acc_criter_ =  ACCURACY_MAXDIST;
+
+  points_ = points;
+  parvals_ = parvals;
+  pt_weight_ = pointwgts;
+  
+  smoothfac_ = 1.0/((srf->endparam_u() - srf->startparam_u()) +
+		    (srf->endparam_v() - srf->startparam_v()));
+
+  curr_srf_ = srf;
+  init_srf_ = shared_ptr<SplineSurface>(srf->clone());
+  corner_fix_ = false;
+}
+
+//***************************************************************************
+
+
+//***************************************************************************
+
+ApproxSurf::ApproxSurf(const std::vector<double>& points, 
+		       const std::vector<double>& parvals,
+		       int order1, int order2, int num_coef1, int num_coef2,
+		       int dim, double aepsge, bool repar)
+   //--------------------------------------------------------------------------
+   //     Constructor for class ApproxSurf.
+   //
+   //     Purpose : Initialize class variables
+   //
+   //     Calls   :
+   //
+
+   //--------------------------------------------------------------------------
+{
+  prevdist_ = maxdist_ = -10000.0;
+  prevav_ = avdist_ = 0;
+  outsideeps_ = 0;
+  dim_ = dim;
+  aepsge_ = aepsge;
+  smoothweight_ = 1.0e-3; // 1.0e-9;
+  constdir_ = -1;
+  use_normals_ = false;
+  close_belt_ = false;
+  edge_derivs_[0] = edge_derivs_[1] = edge_derivs_[2] = edge_derivs_[3] = 0;
+  pts_stabil_ = 0;
+  norm_stabil_ = 0;
+  orig_ = false;
+  repar_ = repar;
+  refine_ = true;
+  mba_ = false;
+  vector<double> tmp_weight(parvals.size()/2, 1.0);
+  pt_weight_ = tmp_weight;
+  c1fac1_ = 0.0;
+  c1fac2_ = 0.0;
+  acc_criter_ =  ACCURACY_MAXDIST;
+
+  points_ = points;
+  parvals_ = parvals;
+
+  double umin, umax, vmin, vmax;
+  umin = umax = parvals_[0];
+  vmin = vmax = parvals_[1];
+  for (size_t kr=2; kr<parvals_.size(); kr+=2)
+    {
+      umin = std::min(umin, parvals_[kr]);
+      umax = std::max(umax, parvals_[kr]);
+      vmin = std::min(vmin, parvals_[kr+1]);
+      vmax = std::max(vmax, parvals_[kr+1]);
+    }
+  double udel = (umax - umin)/(num_coef1 - order1 + 1);
+  double vdel = (vmax - vmin)/(num_coef2 - order2 + 1);
+  
+  vector<double> knots_u(order1+num_coef1);
+  vector<double> knots_v(order2+num_coef2);
+
+  int ki, kj;
+  for (kj=0; kj<order1; ++kj)
+    {
+      knots_u[kj] = umin;
+      knots_u[kj+num_coef1] = umax;
+    }
+  for (ki=1; kj<num_coef1; ++kj, ++ki)
+    knots_u[kj] = umin + ki*udel;
+  
+  for (kj=0; kj<order2; ++kj)
+    {
+      knots_v[kj] = vmin;
+      knots_v[kj+num_coef2] = vmax;
+    }
+  for (ki=1; kj<num_coef2; ++kj, ++ki)
+    knots_v[kj] = vmin + ki*vdel;
+  
+  vector<double> coefs(num_coef1*num_coef2*dim, 0.0);
+  curr_srf_ = shared_ptr<SplineSurface>(new SplineSurface(num_coef1, num_coef2,
+							  order1, order2, &knots_u[0],
+							  &knots_v[0], &coefs[0],
+							  dim));
+  init_srf_ = shared_ptr<SplineSurface>(curr_srf_->clone());
+  
+  smoothfac_ = 1.0/((umax - umin) + (vmax - vmin));
+  corner_fix_ = false;
+}
+
+//***************************************************************************
 
 ApproxSurf::~ApproxSurf()
    //--------------------------------------------------------------------------
@@ -422,7 +565,7 @@ int ApproxSurf::makeSmoothSurf()
 	normweight /= weight_sum;
     }
     double approxweight = 1.0 - wgt1 - wgt2 - wgt3 - normweight;
-    std::vector<double> pt_weight(parvals_.size()/2, 1.0);
+    //std::vector<double> pt_weight(parvals_.size()/2, 1.0);
     double wgt_orig = 0.0;
     if (orig_)
       wgt_orig = 0.1*approxweight;
@@ -434,11 +577,11 @@ int ApproxSurf::makeSmoothSurf()
       srfgen.setOptimize(wgt1, wgt2, wgt3);
 
     srfgen.setLeastSquares(points_, parvals_,
-				  pt_weight, approxweight);
+				  pt_weight_, approxweight);
 
     if (use_normals_) {
 	stat = srfgen.setNormalCond(norm_points_, norm_parvals_,
-				    pt_weight, normweight);
+				    pt_weight_, normweight);
 	if (stat < 0)
 	    return stat;
     }
@@ -991,6 +1134,11 @@ void ApproxSurf::setCoefKnown()
     for (kj = 0; kj < kn2; ++kj)
       coef_known_[kj*kn1+ki] = 1;
 
+  if (corner_fix_)
+    {
+      coef_known_[0] = coef_known_[kn1-1] = coef_known_[(kn2-1)*kn1] =
+	coef_known_[kn1*kn2-1] = 1;
+    }
 
 }
 
