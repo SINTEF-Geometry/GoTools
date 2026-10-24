@@ -173,6 +173,15 @@ class BSplineUniLR : public Streamable
     return mesh_->kval(pardir_, kn);
   }
 
+  /// All knot values
+  std::vector<double> getKnots() const
+  {
+    std::vector<double> knots(kvec_.size());
+    for (int ki=0; ki<(int)kvec_.size(); ++ki)
+      knots[ki] = mesh_->kval(pardir_, kvec_[ki]);
+    return knots;
+  }
+  
   /// Count multiplicity in the end of the B-spline
   int endmult(bool atstart) const;
 

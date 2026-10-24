@@ -1686,14 +1686,16 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
   // Distinguish between rational and non-rational to avoid
   // making temporary storage in the non-rational case
   double eps = 1.0e-12;
-  const bool u_on_end = (u >= mesh_.maxParam(XFIXED)-eps); //(u == (*b)->umax());
-  const bool v_on_end = (v >= mesh_.maxParam(YFIXED)-eps); // (v == (*b)->vmax());
+  // const bool u_on_end = (u >= mesh_.maxParam(XFIXED)-eps); //(u == (*b)->umax());
+  // const bool v_on_end = (v >= mesh_.maxParam(YFIXED)-eps); // (v == (*b)->vmax());
 
   if (!rational_)
     {
       for (auto b = covering_B_functions.begin(); 
 	   b != covering_B_functions.end(); ++b, ++ki) 
 	{
+	  const bool u_on_end = (u >= (*b)->umax()-eps);
+	  const bool v_on_end = (v >= (*b)->vmax()-eps);
 	  // The b-function contains the coefficient.
 	  result += (*b)->eval(u, 
 			       v, 
@@ -1714,8 +1716,8 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
       for (auto b = covering_B_functions.begin(); 
 	   b != covering_B_functions.end(); ++b, ++ki) 
 	{
-	  // const bool u_on_end = (u == (*b)->umax());
-	  // const bool v_on_end = (v == (*b)->vmax());
+	  const bool u_on_end = (u == (*b)->umax());
+	  const bool v_on_end = (v == (*b)->vmax());
 
 	  // The b-function contains the coefficient.
 	  double basis_val_pos = (*b)->evalBasisFunction(u, 
