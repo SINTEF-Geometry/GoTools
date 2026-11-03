@@ -465,7 +465,7 @@ void
     {
       wgt_sum = 0.0;
       for (size_t ki=0; ki<bspl.size(); ++ki)
-	wgt_sum += wgt[ki]*gamma[ki]*bvals[ki];
+	wgt_sum += wgt[ki]*bvals[ki];
     }
 
   for (size_t ki=0; ki<bspl.size(); ++ki)
@@ -523,9 +523,9 @@ void
       bspl[ki]->getUnivariate(XFIXED)->evalBasisFunctions(upar, 1, der1, u_at_end);
       bspl[ki]->getUnivariate(YFIXED)->evalBasisFunctions(vpar, 1, der2, v_at_end);
       bvals[ki].resize(3);
-      bvals[ki][0] = wgt[ki]*gamma[ki]*der1[0]*der2[0];
-      bvals[ki][1] = wgt[ki]*gamma[ki]*der1[1]*der2[0];
-      bvals[ki][2] = wgt[ki]*gamma[ki]*der1[0]*der2[1];
+      bvals[ki][0] = wgt[ki]*der1[0]*der2[0];
+      bvals[ki][1] = wgt[ki]*der1[1]*der2[0];
+      bvals[ki][2] = wgt[ki]*der1[0]*der2[1];
   
       if (rational())
 	{
@@ -533,7 +533,10 @@ void
 	  wgt_sum1 += bvals[ki][1];
 	  wgt_sum2 += bvals[ki][2];
 	}
-    }
+      
+       for (int ka=0; ka<3; ++ka)
+	bvals[ki][ka] *= gamma[ki];
+   }
 
   for (size_t ki=0; ki<bspl.size(); ++ki)
     {
@@ -602,18 +605,21 @@ void
       bspl[ki]->getUnivariate(XFIXED)->evalBasisFunctions(upar, 2, der1, u_at_end);
       bspl[ki]->getUnivariate(YFIXED)->evalBasisFunctions(vpar, 2, der2, v_at_end);
       bvals[ki].resize(6);
-      bvals[ki][0] = wgt[ki]*gamma[ki]*der1[0]*der2[0];
-      bvals[ki][1] = wgt[ki]*gamma[ki]*der1[1]*der2[0];
-      bvals[ki][2] = wgt[ki]*gamma[ki]*der1[0]*der2[1];
-      bvals[ki][3] = wgt[ki]*gamma[ki]*der1[2]*der2[0];
-      bvals[ki][4] = wgt[ki]*gamma[ki]*der1[1]*der2[1];
-      bvals[ki][5] = wgt[ki]*gamma[ki]*der1[0]*der2[2];
+      bvals[ki][0] = wgt[ki]*der1[0]*der2[0];
+      bvals[ki][1] = wgt[ki]*der1[1]*der2[0];
+      bvals[ki][2] = wgt[ki]*der1[0]*der2[1];
+      bvals[ki][3] = wgt[ki]*der1[2]*der2[0];
+      bvals[ki][4] = wgt[ki]*der1[1]*der2[1];
+      bvals[ki][5] = wgt[ki]*der1[0]*der2[2];
  
       if (rational())
 	{
 	  for (int ka=0; ka<6; ++ka)
 	    wgt_sum[ka] += bvals[ki][ka];
 	}
+      
+      for (int ka=0; ka<6; ++ka)
+	bvals[ki][ka] *= gamma[ki];
     }
 
   for (size_t ki=0; ki<bspl.size(); ++ki)
@@ -696,22 +702,25 @@ void
       bspl[ki]->getUnivariate(XFIXED)->evalBasisFunctions(upar, 3, der1, u_at_end);
       bspl[ki]->getUnivariate(YFIXED)->evalBasisFunctions(vpar, 3, der2, v_at_end);
       bvals[ki].resize(10);
-      bvals[ki][0] = wgt[ki]*gamma[ki]*der1[0]*der2[0];
-      bvals[ki][1] = wgt[ki]*gamma[ki]*der1[1]*der2[0];
-      bvals[ki][2] = wgt[ki]*gamma[ki]*der1[0]*der2[1];
-      bvals[ki][3] = wgt[ki]*gamma[ki]*der1[2]*der2[0];
-      bvals[ki][4] = wgt[ki]*gamma[ki]*der1[1]*der2[1];
-      bvals[ki][5] = wgt[ki]*gamma[ki]*der1[0]*der2[2];
-      bvals[ki][6] = wgt[ki]*gamma[ki]*der1[3]*der2[0];
-      bvals[ki][7] = wgt[ki]*gamma[ki]*der1[2]*der2[1];
-      bvals[ki][8] = wgt[ki]*gamma[ki]*der1[1]*der2[2];
-      bvals[ki][9] = wgt[ki]*gamma[ki]*der1[0]*der2[3];
+      bvals[ki][0] = wgt[ki]*der1[0]*der2[0];
+      bvals[ki][1] = wgt[ki]*der1[1]*der2[0];
+      bvals[ki][2] = wgt[ki]*der1[0]*der2[1];
+      bvals[ki][3] = wgt[ki]*der1[2]*der2[0];
+      bvals[ki][4] = wgt[ki]*der1[1]*der2[1];
+      bvals[ki][5] = wgt[ki]*der1[0]*der2[2];
+      bvals[ki][6] = wgt[ki]*der1[3]*der2[0];
+      bvals[ki][7] = wgt[ki]*der1[2]*der2[1];
+      bvals[ki][8] = wgt[ki]*der1[1]*der2[2];
+      bvals[ki][9] = wgt[ki]*der1[0]*der2[3];
  
       if (rational())
 	{
 	  for (int ka=0; ka<10; ++ka)
 	    wgt_sum[ka] += bvals[ki][ka];
 	}
+      
+      for (int ka=0; ka<10; ++ka)
+	bvals[ki][ka] *= gamma[ki];
     }
 
   for (size_t ki=0; ki<bspl.size(); ++ki)
@@ -799,7 +808,7 @@ void
     {
       wgt_sum = 0.0;
       for (size_t ki=0; ki<bspl.size(); ++ki)
-	wgt_sum += (wgt[ki]*gamma[ki]*bvals2[ki]);
+	wgt_sum += (wgt[ki]*bvals2[ki]);
     }
 
   bvals.resize(bspl.size());
@@ -852,9 +861,9 @@ LRSplineSurface::getBasisDerivs(double upar, double vpar, Element2D* elem,
   
       if (rational())
 	{
-	  wgt_sum0 += (wgt[ki]*gamma[ki]*bvals2[ki][0]);
-	  wgt_sum1 += (wgt[ki]*gamma[ki]*bvals2[ki][1]);
-	  wgt_sum2 += (wgt[ki]*gamma[ki]*bvals2[ki][2]);
+	  wgt_sum0 += (wgt[ki]*bvals2[ki][0]);
+	  wgt_sum1 += (wgt[ki]*bvals2[ki][1]);
+	  wgt_sum2 += (wgt[ki]*bvals2[ki][2]);
 	}
     }
 

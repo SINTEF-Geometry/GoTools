@@ -209,7 +209,9 @@ namespace Go
     /// Associated B-spline
     std::vector<LRBSpline2D*> bsplines;
 
- 
+     /// Element associated with the parameter pair
+    Element2D* element;
+
     /// The value of all basis functions and derivatives
     std::vector< std::vector<double> > values;
 
@@ -218,12 +220,12 @@ namespace Go
     /// \param u v parameter
     /// \param deriv Number of derivatives
     /// \param size Number of functions
-    void prepareDerivs(double u, double v, int idx_u, int idx_v,
-		       size_t deriv, size_t size)
+    void prepareDerivs(double u, double v, size_t deriv, Element2D* elem, size_t size)
     {
       derivs = deriv;
       param[0] = u;
       param[1] = v;
+      element = elem;
       bsplines.resize(size);
       values.resize(size);
       for (size_t i=0;i<size;++i)

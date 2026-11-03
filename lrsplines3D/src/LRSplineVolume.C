@@ -1717,7 +1717,7 @@ Point LRSplineVolume::operator()(double u, double v, double w, int u_deriv, int 
 	      // The b-function contains the coefficient.
 	      const bool u_on_end = (u >= (*b)->umax()-eps);
 	      const bool v_on_end = (v >= (*b)->vmax()-eps);
-	      const bool w_on_end = (v >= (*b)->wmax()-eps);
+	      const bool w_on_end = (w >= (*b)->wmax()-eps);
 	  
 	      double basis_val_pos = (*b)->evalBasisFunction(u, 
 							     v, 
