@@ -42,6 +42,7 @@
 //#include "GoTools/lrsplines3D/LinDepUtils.h"
 #include "GoTools/lrsplines3D/Mesh3D.h"
 #include "GoTools/lrsplines3D/LRSpline3DMBA.h"
+#include "GoTools/lrsplines3D/LRProjection3D.h"
 #include "GoTools/lrsplines3D/LRSpline3DUtils.h"
 #include "GoTools/lrsplines3D/LRFeature3DUtils.h"
 //#include "GoTools/creators/SmoothSurf.h"
@@ -57,6 +58,7 @@
 
 //#define DEBUG
 //#define DEBUG0
+#define DEBUG_REFINE
 
 using std::vector;
 using std::cout;
@@ -67,10 +69,10 @@ using namespace Go;
 //==============================================================================
 LRVolApprox::LRVolApprox(vector<double>& points, 
                          int dim, double epsge,  
-                         double mba_level,
+                         double mba_level, int proj_type,
                          bool closest_dist, bool repar)
   : nmb_pts_((int)points.size()/(3+dim)), points_(points), useMBA_(true), 
-    initMBA_(true), initMBA_coef_(mba_level), 
+    initMBA_(true), initMBA_coef_(mba_level), proj_type_(proj_type), 
     maxdist_(-10000.0), maxdist_prev_(-10000.0), 
     avdist_(0.0), avdist_all_(0), avdist_all_prev_(0), 
     outsideeps_(0), outsideeps_prev_(0), maxout_(-10000.0), avout_(0.0),
@@ -88,211 +90,24 @@ LRVolApprox::LRVolApprox(vector<double>& points,
   grid_start_[0] = grid_start_[1] = grid_start_[2] = 0.0;
   cell_size_[0] = cell_size_[1] = cell_size_[2] = 1.0;
   usize_min_ = vsize_min_ = wsize_min_ = -1;
+  prev_el_out_ = -1.0;
+  prev_thresh_ = std::numeric_limits<double>::max();
 
   fix_boundary_ = false; //true;
 
   makeInitVol(dim);
 }
-/*
-//==============================================================================
-LRVolApprox::LRVolApprox(shared_ptr<SplineSurface>& srf,
-			   vector<double>& points, 
-			   double epsge, bool closest_dist,
-			   bool repar)
-  : points_(points), useMBA_(false), toMBA_(4), initMBA_(false), 
-    initMBA_coef_(0.0), 
-    maxdist_(-10000.0), maxdist_prev_(-10000.0), avdist_(0.0), 
-    avdist_all_(0.0), avdist_all_prev_(0), 
-    outsideeps_(0), aepsge_(epsge), smoothweight_(1.0e-3), smoothbd_(false), 
-    repar_(repar), check_close_(closest_dist), 
-    fix_corner_(false), to3D_(-1), grid_(false), check_init_accuracy_(false),
-    initial_surface_(true), has_min_constraint_(false), has_max_constraint_(false), 
-    has_local_constraint_(false), verbose_(false)
-//==============================================================================
-{
-  nmb_pts_ = (int)points.size()/(2+srf->dimension());
-  face_derivs_[0] = face_derivs_[1] = face_derivs_[2] = face_derivs_[3] = 0;
-  grid_start_[0] = grid_start_[1] = 0.0;
-  cell_size_[0] = cell_size_[1] = 1.0;
-  fix_boundary_ = false; //true;
-  make_ghost_points_ = false;
-  usize_min_ = vsize_min_ = -1;
-
-  // if (srf->dimension() > 1)
-  //   {
-  //     initMBA_ = false;
-  //     useMBA_ = false;
-  //     toMBA_ = 10e4;  // A large number
-  //   }
-
-  // Create an LR B-spline surface based on the given spline surface
-  makeInitSurf(srf);
-}
-
-//==============================================================================
-LRVolApprox::LRVolApprox(shared_ptr<LRSplineSurface>& srf,
-			   vector<double>& points, 
-			   double epsge, bool closest_dist,
-			   bool repar, bool check_init_accuracy)
-//==============================================================================
-  : points_(points), useMBA_(false), toMBA_(4), initMBA_(false), 
-    initMBA_coef_(0.0),
-    maxdist_(-10000.0), maxdist_prev_(-10000.0), avdist_(0.0), 
-    avdist_all_(0.0), avdist_all_prev_(0), 
-    outsideeps_(0), aepsge_(epsge), smoothweight_(1.0e-3), 
-    smoothbd_(false), repar_(repar), check_close_(closest_dist), 
-    fix_corner_(false), to3D_(-1), check_init_accuracy_(check_init_accuracy), 
-    grid_(false), initial_surface_(true), has_min_constraint_(false), 
-    has_max_constraint_(false), has_local_constraint_(false), verbose_(false)
-{
-  nmb_pts_ = (int)points.size()/(2+srf->dimension());
-  face_derivs_[0] = face_derivs_[1] = face_derivs_[2] = face_derivs_[3] = 0;
-  grid_start_[0] = grid_start_[1] = 0.0;
-  cell_size_[0] = cell_size_[1] = 1.0;
-  fix_boundary_ = false; //true;
-  make_ghost_points_ = false;
-  srf_ = srf;
-  coef_known_.assign(srf_->numBasisFunctions(), 0.0);  // Initially nothing is fixed
-  usize_min_ = vsize_min_ = -1;
-
-  // if (srf->dimension() > 1)
-  //   {
-  //     initMBA_ = false;
-  //     useMBA_ = false;
-  //     toMBA_ = 10e4;  // A large number
-  //   }
-}
-
-//==============================================================================
-LRVolApprox::LRVolApprox(int ncoef_u, int order_u, int ncoef_v, int order_v,
-			   vector<double>& points, 
-			   int dim, double epsge, bool init_mba, 
-			   double mba_level,
-			   bool closest_dist, bool repar)
-//==============================================================================
-  : nmb_pts_((int)points.size()/(2+dim)), points_(points), useMBA_(false),
-    toMBA_(4), initMBA_(init_mba), initMBA_coef_(mba_level), 
-    maxdist_(-10000.0), maxdist_prev_(-10000.0), avdist_(0.0), 
-    avdist_all_(0.0), avdist_all_prev_(0), outsideeps_(0), aepsge_(epsge), 
-    smoothweight_(1.0e-3), 
-    smoothbd_(false), repar_(repar), check_close_(closest_dist), 
-    fix_corner_(false), to3D_(-1), grid_(false), check_init_accuracy_(false),
-    initial_surface_(false), has_min_constraint_(false), has_max_constraint_(false),
-    has_local_constraint_(false), verbose_(false)
-{
-  face_derivs_[0] = face_derivs_[1] = face_derivs_[2] = face_derivs_[3] = 0;
-  grid_start_[0] = grid_start_[1] = 0.0;
-  cell_size_[0] = cell_size_[1] = 1.0;
-  usize_min_ = vsize_min_ = -1;
-
-  fix_boundary_ = false; //true;
-  make_ghost_points_ = false;
-
-  // if (dim > 1)
-  //   {
-  //     initMBA_ = false;
-  //     useMBA_ = false;
-  //     toMBA_ = 10e4;  // A large number
-  //   }
-
-  // Create an LR B-spline surface with unset coefficients and the domain
-  // given by the parameter domain of the points. The size of the spline
-  // space is given. The knots will be equally spaced
-  makeInitSurf(dim, ncoef_u, order_u, ncoef_v, order_v);
-}
-*/
-/*
-//==============================================================================
-LRVolApprox::LRVolApprox(int order_u, vector<double>& knots_u, 
-			   int order_v, vector<double>& knots_v,
-			   vector<double>& points, int dim, 
-			   double epsge, bool init_mba, 
-			   double mba_level,
-			   bool closest_dist, bool repar)
-//==============================================================================
-  : nmb_pts_((int)points.size()/(2+dim)), points_(points), useMBA_(false),
-    toMBA_(4), initMBA_(init_mba), initMBA_coef_(mba_level), 
-    maxdist_(-10000.0), maxdist_prev_(-10000.0), avdist_(0.0), 
-    avdist_all_(0.0), avdist_all_prev_(0), outsideeps_(0), aepsge_(epsge), 
-  smoothweight_(1.0e-3), 
-    smoothbd_(false), repar_(repar), check_close_(closest_dist), 
-    fix_corner_(false), to3D_(-1), grid_(false), check_init_accuracy_(false),
-    initial_surface_(false), has_min_constraint_(false), has_max_constraint_(false),
-    has_local_constraint_(false), verbose_(false)
-{
-  face_derivs_[0] = face_derivs_[1] = face_derivs_[2] = face_derivs_[3] = 0;
-  grid_start_[0] = grid_start_[1] = 0.0;
-  cell_size_[0] = cell_size_[1] = 1.0;
-  usize_min_ = vsize_min_ = -1;
-
-  fix_boundary_ = false; //true;
-  make_ghost_points_ = false;
-
-  // if (dim > 1)
-  //   {
-  //     initMBA_ = false;
-  //     useMBA_ = false;
-  //     toMBA_ = 10e4;  // A large number
-  //   }
-
-  // Compute domain
-  double domain[4]; //umin, umax, vmin, vmax;
-  computeParDomain(dim, domain[0], domain[1], domain[2], domain[3]);
-
-  // Check if the knot vectors should be extended
-  int ki;
-  for (ki=order_u; ki<(int)knots_u.size(); ++ki)
-    {
-      double knot = knots_u[ki];
-      if (knot > domain[0] && 0.5*(knots_u[ki-1]+knot) < domain[0])
-	knots_u.insert(knots_u.begin()+ki, 0.5*(knots_u[ki-1]+knot));
-      if (knot > domain[0])
-	break;
-    }
-  for (ki=(int)knots_u.size()-order_u-1; ki>0; --ki)
-    {
-      double knot = knots_u[ki];
-      if (knot < domain[1] && 0.5*(knots_u[ki+1]+knot) > domain[1])
-	knots_u.insert(knots_u.begin()+ki+1, 0.5*(knots_u[ki+1]+knot));
-      if (knot < domain[1])
-	break;
-    }
-
-  for (ki=order_v; ki<(int)knots_v.size(); ++ki)
-    {
-      double knot = knots_v[ki];
-      if (knot > domain[2] && 0.5*(knots_v[ki-1]+knot) < domain[2])
-	knots_v.insert(knots_v.begin()+ki, 0.5*(knots_v[ki-1]+knot));
-      if (knot > domain[2])
-	break;
-    }
-  for (ki=(int)knots_v.size()-order_v-1; ki>0; --ki)
-    {
-      double knot = knots_v[ki];
-      if (knot < domain[3] && 0.5*(knots_v[ki+1]+knot) > domain[3])
-	knots_v.insert(knots_v.begin()+ki+1, 0.5*(knots_v[ki+1]+knot));
-      if (knot < domain[3])
-	break;
-    }
- 
-  // Create an LR B-spline representation of a tensor-product spline surface 
-  // with unset coefficients and the given knots
-  int ncoef_u = (int)knots_u.size() - order_u;
-  int ncoef_v = (int)knots_v.size() - order_v;
-  makeInitSurf(dim, ncoef_u, order_u, ncoef_v, order_v, &knots_u[0], &knots_v[0]);
-}
-*/
 
 //==============================================================================
 LRVolApprox::LRVolApprox(int ncoef_u, int order_u, int ncoef_v, int order_v,
 			 int ncoef_w, int order_w,
 			 vector<double>& points, int dim, 
 			 double domain[], double epsge, //bool init_mba, 
-			 double mba_level,
+			 double mba_level, int proj_type,
 			 bool closest_dist, bool repar)
   //==============================================================================
   : nmb_pts_((int)points.size()/(3+dim)), points_(points), useMBA_(false),
-    initMBA_(true), initMBA_coef_(mba_level), 
+    initMBA_(true), initMBA_coef_(mba_level), proj_type_(proj_type), 
     maxdist_(-10000.0), maxdist_prev_(-10000.0), avdist_(0.0), 
     avdist_all_(0.0), avdist_all_prev_(0), outsideeps_(0), outsideeps_prev_(0),
     maxout_(-10000.0), avout_(0.0), aepsge_(epsge), 
@@ -306,6 +121,8 @@ LRVolApprox::LRVolApprox(int ncoef_u, int order_u, int ncoef_v, int order_v,
   grid_start_[0] = grid_start_[1] = grid_start_[2] =0.0;
   cell_size_[0] = cell_size_[1] = cell_size_[2] = 1.0;
   usize_min_ = vsize_min_ = wsize_min_ = -1;
+  prev_el_out_ = -1.0;
+  prev_thresh_ = std::numeric_limits<double>::max();
 
   fix_boundary_ = false; //true;
 
@@ -380,14 +197,14 @@ shared_ptr<LRSplineVolume> LRVolApprox::getApproxVol(double& maxdist,
     // for switching the OpenMP level.
     const double pts_per_elem = num_pts/num_elem;
     const bool omp_for_elements = true; //false; //(num_elem > pts_per_elem); // As opposed to element points.
-    const bool omp_for_mba_update = true;
+    //const bool omp_for_mba_update = true;
 #ifndef NDEBUG
     std::cout << "num_elem: " << num_elem << ", pts_per_elem: " << pts_per_elem << ", openmp_for_elements: " <<
 	omp_for_elements << std::endl;
 #endif
 #else
     const bool omp_for_elements = false; // 201503 The omp version seems to be faster even when run sequentially.
-    const bool omp_for_mba_update = false;
+    //const bool omp_for_mba_update = false;
 #endif
 
 #ifdef DEBUG
@@ -429,6 +246,7 @@ shared_ptr<LRSplineVolume> LRVolApprox::getApproxVol(double& maxdist,
 	}
     }
   */
+  int currdiv = (alter_) ? 1 : 4;
   
   // Distribute given data points to elements
   LRSpline3DUtils::distributeDataPoints(vol_.get(), points_, true, true);
@@ -467,42 +285,46 @@ shared_ptr<LRSplineVolume> LRVolApprox::getApproxVol(double& maxdist,
   //if (fix_boundary_)
   //  setFixBoundary(true);
 
-  // Initial approximation of LR B-spline surface
-  if (omp_for_mba_update && vol_->dimension() == 1)
-    {
-      // double delta = (avdist_ < mineps) ? 0.0 : 0.001;
-      // delta = 0.005;
-      LRSpline3DMBA::MBADistAndUpdate_omp(vol_.get(), mineps, delta);
-    }
+  // Initial approximation of LR B-spline volume
+  if (proj_type_ > 0)
+    runProjection(proj_type_, 0);
   else
-    {
-      LRSpline3DMBA::MBADistAndUpdate(vol_.get());
-    }
-  //if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
-  //  {
-  //    adaptSurfaceToConstraints();
-  //  }
-  int m_itermax = 2; //3; //4;
-  for (int m_iter=1; m_iter<m_itermax; ++m_iter)
-    {
-#ifdef DEBUG
-  cout << "Running MBA a second time... " << endl;
-#endif
-  if (omp_for_mba_update && vol_->dimension() == 1)
-    {
-      // double delta = (avdist_ < mineps) ? 0.0 : 0.001;
-      // delta = 0.005;
-      LRSpline3DMBA::MBADistAndUpdate_omp(vol_.get(), mineps, delta);
-    }
-  else
-    {
-      LRSpline3DMBA::MBADistAndUpdate(vol_.get());
-    }
-    }
-  // if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
-  //  {
-  //    adaptSurfaceToConstraints();
-  //  }
+    runMBAUpdate(mineps, delta);
+//   if (omp_for_mba_update && vol_->dimension() == 1)
+//     {
+//       // double delta = (avdist_ < mineps) ? 0.0 : 0.001;
+//       // delta = 0.005;
+//       LRSpline3DMBA::MBADistAndUpdate_omp(vol_.get(), mineps, delta);
+//     }
+//   else
+//     {
+//       LRSpline3DMBA::MBADistAndUpdate(vol_.get());
+//     }
+//   //if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
+//   //  {
+//   //    adaptSurfaceToConstraints();
+//   //  }
+//   int m_itermax = 2; //3; //4;
+//   for (int m_iter=1; m_iter<m_itermax; ++m_iter)
+//     {
+// #ifdef DEBUG
+//   cout << "Running MBA a second time... " << endl;
+// #endif
+//   if (omp_for_mba_update && vol_->dimension() == 1)
+//     {
+//       // double delta = (avdist_ < mineps) ? 0.0 : 0.001;
+//       // delta = 0.005;
+//       LRSpline3DMBA::MBADistAndUpdate_omp(vol_.get(), mineps, delta);
+//     }
+//   else
+//     {
+//       LRSpline3DMBA::MBADistAndUpdate(vol_.get());
+//     }
+//     }
+//   // if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
+//   //  {
+//   //    adaptSurfaceToConstraints();
+//   //  }
   updateCoefKnown();
   
 #ifdef DEBUG
@@ -579,7 +401,7 @@ shared_ptr<LRSplineVolume> LRVolApprox::getApproxVol(double& maxdist,
 
     int level;
     // Start the iteration
-    double threshold_prev = -1.0;
+    double thresh_prev = -1.0;
     double eps = 1.0-12;
     double epsfrac = 0.001*mineps;
     bool recompute_accuracy = false;
@@ -634,20 +456,35 @@ shared_ptr<LRSplineVolume> LRVolApprox::getApproxVol(double& maxdist,
 	    // 		      (level+1)*aepsge_)/(double)iterations;
 	    //double threshold = std::max(aepsge_, 0.5*maxdist_);
 	    //double threshold = (mineps + avdist_ + maxdist_)/3.0;
-	    double threshold = (mineps + 0.5*maxout_)/2.0 + avout_;
-	    if (level > 0 && maxdist_/maxdist_prev_ > 0.9)
+	    double thresh;
+	    if (threshold_ == 1 || threshold_ == 4)
 	      {
-		// Slow convergence. Reduce threshold
-		threshold = (mineps + avdist_ + 0.5*maxdist_)/3.0;
+		thresh = (mineps + 0.5*maxout_)/2.0 + avout_;
+		if (level > 0 && maxdist_/maxdist_prev_ > 0.9)
+		  {
+		    // Slow convergence. Reduce threshold
+		    thresh = (mineps + avdist_ + 0.5*maxdist_)/3.0;
+		  }
+		if (thresh_prev > 0.0 && thresh/thresh_prev > 0.9)
+		  thresh = 0.9*thresh_prev;
+		thresh = std::max(mineps, thresh);
+		if (threshold_ == 4)
+		  thresh= std::min(thresh, mineps + 2.0*mineps/(double)(level+1));
 	      }
-	    if (threshold_prev > 0.0 && threshold/threshold_prev > 0.9)
-	      threshold = 0.9*threshold_prev;
-	    threshold = std::max(mineps, threshold);
+	    else
+	      thresh = mineps;
 	    //threshold = aepsge_;
 #ifdef DEBUG0
-	    std::cout << "Level " << level+1 << ", threshold = " << threshold << std::endl;
+	    std::cout << "Level " << level+1 << ", thresh = " << thresh << std::endl;
 #endif
-	    int nmb_refs = refineVol(threshold);
+	    std::cout << "Type threshold: " << threshold_ << ", level: " << thresh << std::endl;
+	    int nmb_refs;
+	    if (category_ <= minSpanCombined)
+	      nmb_refs = refineVol3(level+1, currdiv, thresh);
+	    else if (category_ == structuredMesh)
+	      nmb_refs = refineVol4(level+1, currdiv, thresh);
+	    else
+	      nmb_refs = refineVol(level+1, currdiv, thresh);
 	    if (nmb_refs == 0)
 	      break;  // No refinements performed
 #ifdef DEBUG0
@@ -655,7 +492,7 @@ shared_ptr<LRSplineVolume> LRVolApprox::getApproxVol(double& maxdist,
 #endif
 	    LRSpline3DUtils::distributeDataPoints(vol_.get(), points_, 
 						  true, true);
-	    threshold_prev = threshold;
+	    thresh_prev = thresh;
 	  }
 
 	// OBAR
@@ -741,47 +578,53 @@ shared_ptr<LRSplineVolume> LRVolApprox::getApproxVol(double& maxdist,
 	std::cout << "MBA 1" << std::endl;
 #endif
 
-	// Update surface
-	if (vol_->dimension() == 3)
+	// Update volume
+	if (proj_type_ > 0)
 	  {
-	    LRSpline3DMBA::MBADistAndUpdate(vol_.get());
-	  }
-	else if (omp_for_mba_update)
-	  {
-	    // double delta = (avdist_ < mineps) ? 0.0 : 0.001;
-	    // delta = 0.005;
-	    LRSpline3DMBA::MBADistAndUpdate_omp(vol_.get(), mineps,
-						maxout_ < mineps ? 0.0 : delta);
+	    runProjection(proj_type_, level+1);
 	  }
 	else
-	  {
-	    LRSpline3DMBA::MBADistAndUpdate(vol_.get());
-	    //LRSpline3DMBA::MBAUpdate(vol_.get());
-	  }
-	//if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
-	//  adaptSurfaceToConstraints();
-	for (int m_iter=1; m_iter<m_itermax; ++m_iter)
-	  {
-#ifdef DEBUG0
-	    std::cout << "MBA 2" << std::endl;
-#endif
+	  runMBAUpdate(mineps, delta);
+	// 	if (vol_->dimension() == 3)
+// 	  {
+// 	    LRSpline3DMBA::MBADistAndUpdate(vol_.get());
+// 	  }
+// 	else if (omp_for_mba_update)
+// 	  {
+// 	    // double delta = (avdist_ < mineps) ? 0.0 : 0.001;
+// 	    // delta = 0.005;
+// 	    LRSpline3DMBA::MBADistAndUpdate_omp(vol_.get(), mineps,
+// 						maxout_ < mineps ? 0.0 : delta);
+// 	  }
+// 	else
+// 	  {
+// 	    LRSpline3DMBA::MBADistAndUpdate(vol_.get());
+// 	    //LRSpline3DMBA::MBAUpdate(vol_.get());
+// 	  }
+// 	//if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
+// 	//  adaptSurfaceToConstraints();
+// 	for (int m_iter=1; m_iter<m_itermax; ++m_iter)
+// 	  {
+// #ifdef DEBUG0
+// 	    std::cout << "MBA 2" << std::endl;
+// #endif
 
-	    if (omp_for_mba_update && vol_->dimension() == 1)
-	      {
-		// double delta = (avdist_ < mineps) ? 0.0 : 0.001;
-		// delta = 0.005;
-		LRSpline3DMBA::MBADistAndUpdate_omp(vol_.get(), mineps, 
-						maxout_ < mineps ? 0.0 : delta);
-	      }
-	    else
-	      {
-		LRSpline3DMBA::MBADistAndUpdate(vol_.get());
-	      }
-	  }
-	// computeAccuracy();
-	// LRSpline3DMBA::MBAUpdate(vol_.get());
-	//if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
-	//  adaptSurfaceToConstraints();
+// 	    if (omp_for_mba_update && vol_->dimension() == 1)
+// 	      {
+// 		// double delta = (avdist_ < mineps) ? 0.0 : 0.001;
+// 		// delta = 0.005;
+// 		LRSpline3DMBA::MBADistAndUpdate_omp(vol_.get(), mineps, 
+// 						maxout_ < mineps ? 0.0 : delta);
+// 	      }
+// 	    else
+// 	      {
+// 		LRSpline3DMBA::MBADistAndUpdate(vol_.get());
+// 	      }
+// 	  }
+// 	// computeAccuracy();
+// 	// LRSpline3DMBA::MBAUpdate(vol_.get());
+// 	//if (has_min_constraint_ || has_max_constraint_ || has_local_constraint_)
+// 	//  adaptSurfaceToConstraints();
       
       
 	/*#ifdef DEBUG
@@ -1743,7 +1586,145 @@ void LRVolApprox::computeAccuracyElement_omp(vector<double>& points, int nmb, in
   }
 }
 
- 
+ //==============================================================================
+void  LRVolApprox::runMBAUpdate(double mineps, double delta)
+//==============================================================================
+{
+#ifdef _OPENMP
+    const bool omp_for_mba_update = true;
+#else
+    const bool omp_for_mba_update = true;//false; // 201503 The omp version seems to be faster even when run sequentially.
+#endif
+
+
+    if (omp_for_mba_update && vol_->dimension() == 1)
+    {
+      LRSpline3DMBA::MBADistAndUpdate_omp(vol_.get(),  mineps, delta);
+    }
+  else
+    {
+      LRSpline3DMBA::MBADistAndUpdate(vol_.get());
+    }
+  
+  int m_itermax = 2;
+  for (int mba_iter=1; mba_iter<m_itermax; ++mba_iter)
+    {
+      if (omp_for_mba_update && vol_->dimension() == 1)
+	{
+	  LRSpline3DMBA::MBADistAndUpdate_omp(vol_.get(), 
+					      mineps, delta);
+	}
+      else
+	{
+	  LRSpline3DMBA::MBADistAndUpdate(vol_.get());
+	}
+    }
+
+ }
+
+//==============================================================================
+void  LRVolApprox::runProjection(int proj_type, int it_level, int num_points)
+//==============================================================================
+{
+  bool apply_smooth_proj = false;
+  
+  // Compute by nesting level
+  int max_level = 10;  // Should always be enough
+  double dlim = (it_level > 0) ? 100.0*maxdist_ : 1.0e5; //50.0*aepsge_;
+  std::cout << "dlim: " << dlim << std::endl;
+  int proj_IDW = 2;
+  int proj_quad = 4;
+ for (int level=0; level<max_level; ++level)
+    {
+      int num_update = 0;
+      for (auto bspl=vol_->basisFunctionsBegin();
+	   bspl!=vol_->basisFunctionsEnd(); ++bspl)
+	{
+	  if (bspl->second->coefFixed())
+	    continue;
+	  
+	  int blevel = bspl->second->getNestLevel();
+	  if (blevel != level)
+	    continue;
+
+	  // Compute coefficient using projection
+	  Point coef;
+	  double rad = LRProjection3D::computeCoef(vol_.get(),
+						   bspl->second.get(), proj_type,
+						   apply_smooth_proj, dlim, coef,
+						   num_points);
+
+	  if (blevel > 0)
+	    {
+	      // Update coefficient with respect to lower nesting level coefficients
+	      bool OK = bspl->second->adaptProjCoef(coef);
+#ifdef DEBUG_PROJ
+	      std::cout << "Level: " << blevel << ", stat: " << OK << std::endl;
+#endif
+	      if (!OK)
+		{
+		  // Recompute
+		  rad = LRProjection3D::computeCoef(vol_.get(),
+						    bspl->second.get(),
+						    proj_type, apply_smooth_proj,
+						    dlim, coef, num_points);
+		  OK = bspl->second->adaptProjCoef(coef); // Should be OK now
+		}
+	      int stop_break = 1;
+	    }
+
+	  Point coef2 = bspl->second->Coef();
+#ifdef DEBUG_PROJ
+	  if (blevel > 0)
+	    std::cout << "level= " << blevel << ", dist= " << coef.dist(coef2) << std::endl;
+#endif
+	  double dist1 = coef.dist(coef2);
+	  if (dist1 > dlim)
+	    {
+	      //#ifdef DEBUG_PROJ
+	      std::cout << "Dist: " << dist1 << ", lim: " << dlim << ", coef2: " << coef2 << std::endl;
+	      //#endif
+	      Point coef3;
+	      rad = LRProjection3D::computeCoef(vol_.get(), bspl->second.get(),
+						(proj_type > proj_quad) ? proj_quad : proj_IDW,
+						apply_smooth_proj, dlim, coef3, num_points);
+	      if (blevel > 0)
+		{
+		  // Update coefficient with respect to lower nesting level coefficients
+		  bool OK = bspl->second->adaptProjCoef(coef3);
+		  if (!OK)
+		    {
+		      // Recompute
+		      rad = LRProjection3D::computeCoef(vol_.get(), bspl->second.get(),
+							proj_IDW, apply_smooth_proj,
+							dlim, coef3, num_points);
+		      OK = bspl->second->adaptProjCoef(coef3); // Should be OK now
+		    }
+
+		}
+	      double dist2 = coef3.dist(coef2);
+	      if (dist2 < dist1)
+		coef = coef3;
+	      if (dist2 > dlim)
+		{
+		  std::cout << "Dist IDW: " << dist2 << ", coef3: " << coef3 << std::endl;
+		  coef = coef2;
+		  int stop_break = 1;
+		}
+	    }
+	  double gamma = bspl->second->gamma();
+	  vol_->setCoef(coef, bspl->second.get());
+
+	  num_update++;
+	}
+      if (num_update == 0)
+	break;
+    }
+
+}
+
+
+
  
 //==============================================================================
 bool compare_elems(pair<Element3D*,double> el1, pair<Element3D*,double> el2)
@@ -1779,7 +1760,276 @@ void quicksort(double *err, int *perm, int low, int high)
 }
 
 //==============================================================================
-int LRVolApprox::refineVol(double threshold)
+int LRVolApprox::refineVol3(int iter, int& dir, double thresh)
+//==============================================================================
+{
+  double tol = vol_->getKnotTol();
+
+  // Traverse all B-splines and check for elements with outside points
+    for (LRSplineVolume::BSplineMap::const_iterator it1=vol_->basisFunctionsBegin();
+       it1 != vol_->basisFunctionsEnd(); ++it1)
+    {
+      LRBSpline3D* curr = it1->second.get();
+
+      int el_out2 = 0.0;
+      bool out_pts = false;
+      for (auto it2=curr->supportedElementBegin(); 
+	   it2 != curr->supportedElementEnd(); ++it2)
+	{
+	  int num_out = (*it2)->getNmbOutsideTol();
+	  if (num_out > 0)
+	    {
+	      out_pts = true;
+	      break;
+	    }
+	}
+      if (out_pts)
+	curr->setFixCoef(0);
+      else
+	curr->setFixCoef(1);
+    }
+
+    // Select elements to initiate refinement based on threshold
+  int num_elem = vol_->numElements();
+  double av_wgt = 0.0;
+  int el_out = 0;
+  double min_wgt = std::numeric_limits<double>::max();
+  double max_wgt = 0.0;
+  vector<double> all_wgt(num_elem, 0.0);
+  size_t kr=0;
+  for (LRSplineVolume::ElementMap::const_iterator it=vol_->elementsBegin();
+       it != vol_->elementsEnd(); ++it, ++kr)
+    {
+      double av_err, max_err;
+      int nmb_out;
+      int nmb_pts = it->second->nmbDataPoints();
+      it->second->getAccuracyInfo(av_err, max_err, nmb_out);
+      if (nmb_out > 0)
+	{
+	  double wgt = nmb_out + av_err; //+ max_err 
+	  all_wgt[kr] = wgt;
+	  av_wgt += wgt;
+	  min_wgt = std::min(min_wgt, wgt);
+	  max_wgt = std::max(max_wgt, wgt);
+	  el_out++;
+	}
+    }
+  av_wgt /= (double)el_out;
+
+  std::sort(all_wgt.begin(), all_wgt.end());
+  for (kr=0; kr<all_wgt.size(); ++kr)
+    if (all_wgt[kr] > 0.0)
+      break;
+
+  double med_wgt2 = all_wgt[((int)kr+num_elem)/2];
+  double fac = (max_wgt > 2.0*min_wgt) ? 0.5 : 1.0;;
+  double thresh2;
+  if (threshold_ == 2)
+    {
+      thresh2 = fac*min_wgt + (1.0-fac)*av_wgt;
+      // if (thresh2 - floor(thresh2) < 0.5) //0.25)
+      //   thresh2 = floor(thresh2);
+      double highlim = std::max(min_wgt, 0.9*prev_thresh_);
+      thresh2 = std::min(thresh2, highlim); //prev_thresh_);
+      prev_thresh_ = thresh2;
+    }
+  else
+    thresh2 = min_wgt;
+#ifdef DEBUG_REFINE
+  std::cout << "Num elements: " << num_elem << ", elements out: " << el_out << std::endl;
+  std::cout << "thresh2 = " << thresh2 << std::endl;
+  double thresh3 = (kr < 0.9*num_elem) ? med_wgt2 : min_wgt; //fac*min_wgt + (1.0-fac)*av_wgt; //min_wgt; 
+  std::cout << "min_wgt = " << min_wgt << ", av_wgt = " << av_wgt << ", max_wgt = " << max_wgt << std::endl;
+  std::cout << "num_elem = " << num_elem << ", first = " << kr << ", med_wgt = " << all_wgt[num_elem/2] << ", med_wgt2 = " << all_wgt[((int)kr+num_elem)/2] << std::endl;
+  std::cout << "thresh3 = " << thresh3 << std::endl;
+#endif
+  double choose_fac1 = 0.75;
+  double choose_fac2 = 0.05;
+  double outel_fac = (double)el_out/(double)num_elem;
+#ifdef DEBUG_REFINE
+  std::cout << "outel_fac: " << outel_fac << std::endl;
+#endif
+  int dir2 = dir;
+  if (dir2 != 4)
+    dir = 4 - dir;
+
+  prev_el_out_= el_out;
+
+#ifdef DEBUG_REFINE
+  std::cout << "Dir: " << dir2 << ", category: " << category_ << std::endl;
+#endif
+  vector<LRSplineVolume::Refinement3D> refs_x, refs_y, refs_z;
+  for (LRSplineVolume::ElementMap::const_iterator it=vol_->elementsBegin();
+       it != vol_->elementsEnd(); ++it)
+    {
+      double av_err, max_err;
+      int nmb_out;
+      it->second->getAccuracyInfo(av_err, max_err, nmb_out);
+      if (max_err < thresh)
+	continue;
+      double wgt = nmb_out + av_err; //+ max_err 
+      if (wgt < thresh2)
+	continue;
+      if (nmb_out > 0)
+	{
+	  double umin = it->second->umin();
+	  double umax = it->second->umax();
+	  double vmin = it->second->vmin();
+	  double vmax = it->second->vmax();
+	  double wmin = it->second->wmin();
+	  double wmax = it->second->wmax();
+
+	  if ((dir2 == 1 || dir2 == 4) && umax-umin > 2.0*usize_min_)
+	    {
+	      LRSplineVolume::Refinement3D curr_ref1;
+	      DefineRefs3D::refineFromElement(*vol_, it->second.get(), XDIR,
+					      category_, 1, curr_ref1);
+	      DefineRefs3D::appendRef(refs_x, curr_ref1, tol);
+	    }
+
+	  if ((dir2 == 2 || dir2 == 4) && vmax-vmin > 2.0*vsize_min_)
+	    {
+	      LRSplineVolume::Refinement3D curr_ref2;
+	      DefineRefs3D::refineFromElement(*vol_, it->second.get(), YDIR,
+					      category_, 1, curr_ref2);
+	      DefineRefs3D::appendRef(refs_y, curr_ref2, tol);
+	    }
+	  
+	  if ((dir2 == 3 || dir2 == 4) && wmax-wmin > 2.0*wsize_min_)
+	    {
+	      LRSplineVolume::Refinement3D curr_ref2;
+	      DefineRefs3D::refineFromElement(*vol_, it->second.get(), ZDIR,
+					      category_, 1, curr_ref2);
+	      DefineRefs3D::appendRef(refs_z, curr_ref2, tol);
+	    }
+	}
+    }
+
+#ifdef DEBUG
+  std::cout << "Refs x: " << refs_x.size() << ", refs_y: " << refs_y.size() << ", refs_z: " << refs_z.size() << std::endl;
+#endif
+
+ 
+  for (kr=0; kr<refs_x.size(); ++kr)
+    {
+      // std::cout << "Ref: " << refs_x[kr].kval << " " << refs_x[kr].start << " ";
+      // std::cout << refs_x[kr].end << " " << refs_x[kr].d << std::endl;
+      vol_->refine(refs_x[kr], true /*false*/);
+    }
+
+  for (size_t kr=0; kr<refs_y.size(); ++kr)
+    {
+      // std::cout << "Ref: " << refs_y[kr].kval << " " << refs_y[kr].start << " ";
+      // std::cout << refs_y[kr].end << " " << refs_y[kr].d << std::endl;
+      vol_->refine(refs_y[kr], true /*false*/);
+    }
+
+  for (size_t kr=0; kr<refs_z.size(); ++kr)
+    {
+      vol_->refine(refs_z[kr], true /*false*/);
+    }
+
+  vol_->setNestLevel();
+  return (int)refs_x.size() + (int)refs_y.size() + (int)refs_z.size();
+}
+
+//==============================================================================
+int LRVolApprox::refineVol4(int iter, int& dir, double thresh)
+//==============================================================================
+{
+  double tol = vol_->getKnotTol();
+  int dir2 = dir;
+  if (dir2 != 4)
+    dir = 4 - dir;
+
+  // Traverse all B-splines and check for elements with outside points
+    for (LRSplineVolume::BSplineMap::const_iterator it1=vol_->basisFunctionsBegin();
+       it1 != vol_->basisFunctionsEnd(); ++it1)
+    {
+      LRBSpline3D* curr = it1->second.get();
+
+      int el_out2 = 0.0;
+      bool out_pts = false;
+      for (auto it2=curr->supportedElementBegin(); 
+	   it2 != curr->supportedElementEnd(); ++it2)
+	{
+	  int num_out = (*it2)->getNmbOutsideTol();
+	  if (num_out > 0)
+	    {
+	      out_pts = true;
+	      break;
+	    }
+	}
+      if (out_pts)
+	curr->setFixCoef(0);
+      else
+	curr->setFixCoef(1);
+    }
+
+    // Select B-splines to refine based on threshold
+    vector<LRSplineVolume::Refinement3D> refs_x, refs_y, refs_z;
+  for (LRSplineVolume::BSplineMap::const_iterator it=vol_->basisFunctionsBegin();
+       it != vol_->basisFunctionsEnd(); ++it)
+    {
+      LRBSpline3D* bspline = it->second.get();
+      const Mesh3D* mesh = bspline->getMesh();
+      int size1 = bspline->degree(XDIR)+1;
+      int size2 = bspline->degree(YDIR)+1;
+      int size3 = bspline->degree(ZDIR)+1;
+
+      bool refine = false;
+      for (auto it2=bspline->supportedElementBegin(); 
+	   it2 != bspline->supportedElementEnd(); ++it2)
+	{
+	  int num_out = (*it2)->getNmbOutsideTol();
+	  double av_err, max_err;
+	  int nmb_out;
+	  (*it2)->getAccuracyInfo(av_err, max_err, nmb_out);
+ 	  if (num_out > 0 && max_err >= thresh)
+	    {
+	      refine = true;
+	      break;
+	    }
+	}
+
+      if (refine)
+	{
+	  // Refine all knot spans
+	  if (dir2 == 1 || dir2 == 4)
+	    {
+	      DefineRefs3D::refineStructuredMesh(*vol_, bspline, XDIR, 1, refs_x);
+	    }
+	  if (dir2 == 2 || dir2 == 4)
+	    {
+	      DefineRefs3D::refineStructuredMesh(*vol_, bspline, YDIR, 1, refs_y);
+	    }
+	  if (dir2 == 3 || dir2 == 4)
+	    {
+	      DefineRefs3D::refineStructuredMesh(*vol_, bspline, ZDIR, 1, refs_x);
+	    }
+	}
+    }
+  for (size_t kr=0; kr<refs_x.size(); ++kr)
+    {
+      vol_->refine(refs_x[kr], true /*false*/);
+    }
+
+  for (size_t kr=0; kr<refs_y.size(); ++kr)
+    {
+      vol_->refine(refs_y[kr], true /*false*/);
+    }
+  
+  for (size_t kr=0; kr<refs_z.size(); ++kr)
+    {
+      vol_->refine(refs_z[kr], true /*false*/);
+    }
+
+  vol_->setNestLevel();
+  return (int)refs_x.size() + (int)refs_y.size() + (int)refs_z.size();
+}
+
+//==============================================================================
+int LRVolApprox::refineVol(int iter, int& dir, double thresh)
 //==============================================================================
 {
   ref_x_ = ref_y_ = ref_z_ = 0;
@@ -1793,7 +2043,7 @@ int LRVolApprox::refineVol(double threshold)
   double maxerrfac = 0.8;
 #endif
 
-  double mineps = std::min(aepsge_, threshold);
+  double mineps = std::min(aepsge_, thresh);
   double error_fac = 0.1;
   double error_fac2 = 10.0;
   int el_out = 0;
@@ -1860,6 +2110,10 @@ int LRVolApprox::refineVol(double threshold)
   std::ofstream ofout("outfrac.txt");
   ofout << "Number of B-splines: " << num_bspl << std::endl;
 #endif
+
+  int dir2 = dir;
+  if (dir2 != 4)
+    dir = 4 - dir;
   
   // Construct indexed bspline array and collect related accuracy information
   vector<LRBSpline3D*> bsplines(num_bspl);
@@ -2043,8 +2297,8 @@ int LRVolApprox::refineVol(double threshold)
 	continue;
 
       // if (max_error[bspl_perm[ki]] < ((nmb_refs < level_bsplines) ?
-      // 				      mineps : threshold))
-      if (threshold > aepsge_ && max_error[bspl_perm[ki]] < threshold)
+      // 				      mineps : thresh))
+      if (thresh > aepsge_ && max_error[bspl_perm[ki]] < thresh)
       	continue;
 	  
       // if (nmb_refs >= nmb_split)
@@ -2060,7 +2314,7 @@ int LRVolApprox::refineVol(double threshold)
 
       // How to split
       vector<Element3D*> elem_div;
-      defineRefs(bsplines[bspl_perm[ki]], average_threshold,
+      defineRefs(bsplines[bspl_perm[ki]], average_threshold, dir2,
 		 refs_x, refs_y, refs_z, elem_div);
       if (elem_div.size() > 0)
 	nmb_refs++;  //  B-spline is split
@@ -2130,8 +2384,8 @@ int LRVolApprox::refineVol(double threshold)
 	  if (elem_out[kr].second < wgt_fac*av_wgt) //frac) 
 	    break;   // Not a significant element
 	  // if (elem_out[kr].first->getMaxError() < ((nmb_refs < level_bsplines) ? aepsge_ : threshold))//threshold)
-	  if (threshold > aepsge_ && nmb_refs >= level_bsplines &&
-	      elem_out[kr].first->getMaxError() < threshold)
+	  if (thresh > aepsge_ && nmb_refs >= level_bsplines &&
+	      elem_out[kr].first->getMaxError() < thresh)
 	    {
 	      nmb_dismissed++;
 	      maxeldist = std::max(elem_out[kr].first->getMaxError(), maxeldist);
@@ -2233,6 +2487,7 @@ int LRVolApprox::refineVol(double threshold)
   std::cout << "Refs x: " << refs_x.size() << ", y: " << refs_y.size();
   std::cout << ", z: " << refs_z.size() << std::endl;
 #endif
+  vol_->setNestLevel();
   return (int)refs_x.size() + refs_y.size() + refs_z.size();
 }
 #if 1 
@@ -2507,7 +2762,7 @@ void LRVolApprox::checkFeasibleRef(Element3D* elem,
 	  
 	  // Compute weight for importance of refinement
 	  double max_err, av_err;
-	  int nmb_outside, nmb_out_sign;
+	  int nmb_outside;
 	  curr_el[kj]->getAccuracyInfo(av_err, max_err, nmb_outside);
 	  int nmb_pts = curr_el[kj]->nmbDataPoints();
 	  double wgt = av_err*(int)nmb_outside/(int)nmb_pts;
@@ -2548,7 +2803,7 @@ void LRVolApprox::checkFeasibleRef(Element3D* elem,
 	  
 	  // Compute weight for importance of refinement
 	  double max_err, av_err;
-	  int nmb_outside, nmb_out_sign;
+	  int nmb_outside;
 	  curr_el[kj]->getAccuracyInfo(av_err, max_err, nmb_outside);
 	  int nmb_pts = curr_el[kj]->nmbDataPoints();
 	  double wgt = av_err*(int)nmb_outside/(int)nmb_pts;
@@ -2589,7 +2844,7 @@ void LRVolApprox::checkFeasibleRef(Element3D* elem,
 	  
 	  // Compute weight for importance of refinement
 	  double max_err, av_err;
-	  int nmb_outside, nmb_out_sign;
+	  int nmb_outside;
 	  curr_el[kj]->getAccuracyInfo(av_err, max_err, nmb_outside);
 	  int nmb_pts = curr_el[kj]->nmbDataPoints();
 	  double wgt = av_err*(int)nmb_outside/(int)nmb_pts;
@@ -2748,196 +3003,6 @@ void LRVolApprox::checkFeasibleRef(Element3D* elem,
     nmb3_++;
 }
 #endif
-/*
-//==============================================================================
-void LRVolApprox::refineSurf2()
-//==============================================================================
-{
-#ifdef DEBUG
-  int idx=0;
-  for (LRSplineSurface::ElementMap::const_iterator it=srf_->elementsBegin();
-       it != srf_->elementsEnd(); ++it)
-    {
-      if (it->second->hasAccuracyInfo())
-  	{
-  	  double av_err, max_err;
-  	  int nmb_out;
-  	  it->second->getAccuracyInfo(av_err, max_err, nmb_out);
-  	  std::cout << "Element " << idx << ", domain: [(" << it->second->umin() << ",";
-  	  std::cout << it->second->umax() << ")x(" << it->second->vmin() << ",";
-  	  std::cout << it->second->vmax() << ")]" << std::endl;
-  	  std::cout << "Average error: " << av_err << std::endl;
-  	  std::cout << "Maximum error: " << max_err << std::endl;
-  	  std::cout << "Number of points: " << it->second->nmbDataPoints();
-  	  std::cout << ", number of error points: " << nmb_out << std::endl;
-  	}
-      ++idx;
-    }
-#endif
-
-  // Construct indexed element array
-  int num_el = srf_->numElements();
-  vector<Element2D*> elem(num_el);
-  size_t kr = 0;
-  for (LRSplineSurface::ElementMap::const_iterator it=srf_->elementsBegin();
-       it != srf_->elementsEnd(); ++it)
-    elem[kr++] = it->second.get();
-  
-  // Sort elements according to average error
-  vector<int> el_perm(num_el);
-  int ki, kj;
-  for (ki=0; ki<num_el; ++ki)
-    el_perm[ki] = ki;
-
-  // Do the sorting
-  for (ki=0; ki<num_el; ++ki)
-    for (kj=ki+1; kj<num_el; ++kj)
-      {
-	double av_err1 = elem[el_perm[ki]]->getAverageError();
- 	double av_err2 = elem[el_perm[kj]]->getAverageError();
-
-	if (av_err1 < av_err2)
-	  std::swap(el_perm[ki], el_perm[kj]);
-      }
-  
-  // Define threshhold for refinement. The average error includes only those points that
-  // are outside of the resolution
-  double max_av = 0;
-  double mean_av = 0.0;
-  int num_err = 0;
-  for (ki=0; ki<num_el; ++ki)
-    {
-      double av_err = elem[el_perm[ki]]->getAverageError();
-      max_av = std::max(max_av, av_err);
-      mean_av += av_err;
-      if (elem[el_perm[ki]]->getMaxError() > aepsge_)
-	num_err++;
-    }
-  mean_av /= (double)num_el;
-
-  double threshhold = 0.25*mean_av;  // Need to experiment with this
-
-  vector<LRSplineSurface::Refinement2D> refs;
-  int nmb_ref = std::max(std::min((int)el_perm.size(), 4), (int)(0.75*num_err));
-  
-  for (kr=0; kr<el_perm.size(); )
-    {
-      size_t nmb_perm = el_perm.size();
-      if (elem[el_perm[kr]]->getAverageError() < threshhold && (int)refs.size() > nmb_ref)
-	break;  // No more refinements at the current stage
-      if (elem[el_perm[kr]]->getMaxError() < aepsge_)
-	break;
-
-      // Check feasability of split
-      //size_t nmb_refs = refs.size();
-      vector<Element2D*> elements;  // Elements affected by the refinement(s)
-      checkFeasibleRef(elem[el_perm[kr]], refs, elements);
-      if (elements.size() > 0)
-	{
-	  // Remove affected elements from pool
-	  for (size_t kh=0; kh<elements.size(); ++kh)
-	    {
-	      for (ki=0; ki<(int)el_perm.size();)
-		{
-		  if (elements[kh] == elem[el_perm[ki]])
-		    {
-		      el_perm.erase(el_perm.begin()+ki);
-		      break;
-		    }
-		  else
-		    ki++;
-		}
-	    }
-	  if (el_perm.size() == nmb_perm)
-	    kr++;
-	}
-      else
-	kr++;
-    }
-  
-#ifdef DEBUG
-  std::ofstream of("refine0.dat");
-  (void)of.precision(15);
-  for (kr=0; kr<refs.size(); ++kr)
-    {
-      of << refs[kr].kval << "  " << refs[kr].start << "  " << refs[kr].end;
-      of << "  " << refs[kr].d << "  " << refs[kr].multiplicity << std::endl;
-    }
-#endif
-
-  for (kr=0; kr<refs.size(); ++kr)
-    {
-#ifdef DEBUG
-      std::cout << "Refine nr " << kr << ": " << refs[kr].kval << "  " << refs[kr].start << "  ";
-      std::cout << refs[kr].end << "  " << refs[kr].d << "  " << refs[kr].multiplicity << std::endl;
-#endif
-      // Perform refinements, one at the time to keep information stored in the elements
-      srf_->refine(refs[kr], true );
-      std::ofstream of2("refined2_sf.g2");
-      srf_->writeStandardHeader(of2);
-      srf_->write(of2);
-      of2 << std::endl;
-      int stop_break = 1;
-     }
-
-  // // Update coef_known from information in LR B-splines
-  // //updateCoefKnown();
-  // unsetCoefKnown();
-  //  if (fix_boundary_)
-  //   setFixBoundary(true);
-
-  
-  // // Prelimenary implementation. Write accuracy information to standard output
-  // // and get refinement informatiation
-  // // For each element, check if any data points are stored
-  // int idx=0;
-  // for (LRSplineSurface::ElementMap::const_iterator it=srf_->elementsBegin();
-  //      it != srf_->elementsEnd(); ++it)
-  //   {
-  //     if (it->second->hasAccuracyInfo())
-  // 	{
-  // 	  double av_err, max_err;
-  // 	  int nmb_out;
-  // 	  it->second->getAccuracyInfo(av_err, max_err, nmb_out);
-  // 	  std::cout << "Element " << idx << ", domain: [(" << it->second->umin() << ",";
-  // 	  std::cout << it->second->umax() << ")x(" << it->second->vmin() << ",";
-  // 	  std::cout << it->second->vmax() << ")]" << std::endl;
-  // 	  std::cout << "Average error: " << av_err << std::endl;
-  // 	  std::cout << "Maximume error: " << max_err << std::endl;
-  // 	  std::cout << "Number of points: " << it->second->nmbDataPoints();
-  // 	  std::cout << ", number of error points: " << nmb_out << std::endl;
-  // 	}
-  //     ++idx;
-  //   }
-
-  // // Specify refinement
-  // while (true)
-  //   {
-  //     int more;
-  //     std::cout << "Refine more? " << std::endl;
-  //     std::cin >> more;
-  //     if (!more)
-  // 	break;
-  //     double parval, start, end;
-  //     int dir;
-  //     int mult = 1;
-  //     std::cout << "New knot, give pardir (0,1), fixed value, start and end: ";
-  //     std::cout << std::endl;
-  //     std::cin >> dir;
-  //     std::cin >> parval;
-  //     std::cin >> start;
-  //     std::cin >> end;
-
-  //     // The refinement must be performed inserting one knot segment at the
-  //     // time in order to maintain information stored in the element
-  //     srf_->refine((dir==0) ? YFIXED : XFIXED, parval, start, end, mult);
-
-  //     // Update coef_known from information in LR B-splines
-  //     updateCoefKnown();
-  //   }
-  
-}
-*/
  
 //==============================================================================
 void LRVolApprox::makeInitVol(int dim)
@@ -2968,54 +3033,6 @@ void LRVolApprox::makeInitVol(int dim)
   makeInitVol(dim, order, order, order, order, order, order, &knots_u[0], &knots_v[0], &knots_w[0]);
 }
  
- /*
-//==============================================================================
-void LRVolApprox::makeInitSurf(int dim, int ncoef_u, int order_u, int ncoef_v, 
-				int order_v)
-//==============================================================================
-{
-  // Compute domain
-  double domain[4]; //umin, umax, vmin, vmax;
-  computeParDomain(dim, domain[0], domain[1], domain[2], domain[3]);
-
-  makeInitSurf(dim, ncoef_u, order_u, ncoef_v, order_v, domain);
-}
-*/
- /*
-//==============================================================================
-void LRVolApprox::makeInitSurf(int dim, int ncoef_u, int order_u, int ncoef_v, 
-				int order_v, double domain[4])
-//==============================================================================
-{
-  vector<double> knots_u(ncoef_u+order_u);
-  vector<double> knots_v(ncoef_v+order_v);
-
-  double umin, umax, vmin, vmax;
-  computeParDomain(dim, umin, umax, vmin, vmax);
-  umin = std::min(umin, domain[0]);
-  umax = std::max(umax, domain[1]);
-  vmin = std::min(vmin, domain[2]);
-  vmax = std::max(vmax, domain[3]);
-
-  int kj;
-  double del_u = (umax - umin)/(double)(ncoef_u-order_u+1);
-  double del_v = (vmax - vmin)/(double)(ncoef_v-order_v+1);
-  for (kj=0; kj<order_u; ++kj)
-    knots_u[kj] = umin;
-   for (; kj<ncoef_u; ++kj)
-    knots_u[kj] = umin + (kj-order_u+1)*del_u;
-  for (; kj<ncoef_u+order_u; ++kj)
-    knots_u[kj] = umax;
-  for (kj=0; kj<order_v; ++kj)
-    knots_v[kj] = vmin;
-  for (; kj<ncoef_v; ++kj)
-    knots_v[kj] = vmin + (kj-order_v+1)*del_v;
-  for (; kj<ncoef_v+order_v; ++kj)
-    knots_v[kj] = vmax;
-
-  makeInitSurf(dim, ncoef_u, order_u, ncoef_v, order_v, &knots_u[0], &knots_v[0]);
-}
- */
  
 //==============================================================================
 void LRVolApprox::makeInitVol(int dim, 
@@ -3122,22 +3139,10 @@ shared_ptr<SplineVolume> LRVolApprox::createVol(double* points, int nmb_pts,
   
   // Approximate
   stat = avol.equationSolve(result_vol);
-  return result_vol;
   std::cout << "Initial volume: " << stat << std::endl;
+  return result_vol;
 }
  
- /*
-//==============================================================================
-void LRVolApprox::makeInitSurf(shared_ptr<SplineSurface> surf)
-//==============================================================================
-{
-  // Make LR spline surface
-  double knot_tol = 1.0e-6;
-
-  srf_ = shared_ptr<LRSplineSurface>(new LRSplineSurface(surf.get(), knot_tol));
-  coef_known_.assign(srf_->numBasisFunctions(), 0.0);  // Initially nothing is fixed
-}
- */
  
 //==============================================================================
 void LRVolApprox::computeParDomain(int dim, 
@@ -3163,80 +3168,6 @@ void LRVolApprox::computeParDomain(int dim,
 
 }
  
-/*
-//==============================================================================
-void LRVolApprox::setCoefKnown()
-//==============================================================================
-{
-  MESSAGE("CHECK THIS FUNCTION: setCoefKnown()");
-  if (fix_corner_)
-    {
-      // Fix coefficients in corners
-      for (LRSplineVolume::BSplineMap::iterator it=srf_->basisFunctionsBeginNonconst();
-           it != vol_->basisFunctionsEndNonconst(); ++it)
-	{
-	  int deg1 = it->second->degree(XDIR);
-	  int deg2 = it->second->degree(YDIR);
-	  int deg3 = it->second->degree(ZDIR);
-	  int mult1 = it->second->endmult_u(true);
-	  int mult2 = it->second->endmult_u(false);
-	  int mult3 = it->second->endmult_v(true);
-	  int mult4 = it->second->endmult_v(false);
-	  int mult5 = it->second->endmult_w(true);
-	  int mult6 = it->second->endmult_w(false);
-	  if ((mult1 == deg1+1 || mult2 == deg1+1) &&
-	      (mult3 == deg2+1 || mult4 == deg2+1) &&
-	      (mult5 == deg3+1 || mult6 == deg3+1))
-	    it->second->setFixCoef(1);
-	}
-    }
-
-  // Set coef_known from boundary information
-  // Note that k-multiple knots at boundaries are expected, otherwise no
-  // coefficients will be fixed
-  for (size_t ki=0; ki<6; ++ki)
-    {
-      if (face_derivs_[ki] == 0)
-	continue;  // No coefficients to fix
-      
-      // Set boundary characteristics
-      Direction3D d = (ki == 1 || ki == 3 || ki == 5) ? XFIXED : YFIXED;  // Orthogonal to the curve
-      bool atstart = (ki == 0 || ki == 3);  // Whether the constant
-      // parameter curve is in the start related to the opposite parameter direction
-      // of the surface
-
-      // Define coefficients as fixed in the associated b-splines
-      int fixcoef = 1;
-      setCoefKnown(d, atstart, fixcoef);
-    }
-
-  // Transfer information to the global vector
-  updateCoefKnown();
-}
-*/
-/*
-//==============================================================================
-void LRVolApprox::setCoefKnown(Direction2D d,
-				bool atstart, int fixcoef)
-//==============================================================================
-{
-//#ifdef DEBUG
-//  std::ofstream of("mesh.eps");
-//  writePostscriptMesh(*vol_, of);
-//#endif
-
-  for (LRSplineVolume::BSplineMap::iterator it=vol_->basisFunctionsBeginNonconst();
-       it != vol_->basisFunctionsEndNonconst(); ++it)
-    {
-      int deg = it->second->degree(d);
-      int mult = (d == XDIR) ? it->second->endmult_u(atstart) :
-                               ((d == YDIR) ? it->second->endmult_v(atstart) : it->second->endmult_v(atstart));
-      if (mult == deg+1)
-	it->second->setFixCoef(fixcoef);
-    }
-  
-}
-*/
  
 //==============================================================================
 void LRVolApprox::updateCoefKnown()
@@ -3282,11 +3213,11 @@ void LRVolApprox::updateCoefKnown()
 void LRVolApprox::unsetCoefKnown()
 //==============================================================================
 {
-  coef_known_.resize(srf_->numBasisFunctions());
+  coef_known_.resize(vol_->numBasisFunctions());
 
-  LRSplineSurface::BSplineMap::const_iterator it_bs;			
+  LRSplineVolume::BSplineMap::const_iterator it_bs;			
   size_t ki;
-  for (it_bs=srf_->basisFunctionsBegin(), ki=0; it_bs!=srf_->basisFunctionsEnd(); 
+  for (it_bs=vol_->basisFunctionsBegin(), ki=0; it_bs!=vol_->basisFunctionsEnd(); 
        ++it_bs, ++ki)
     {
       coef_known_[ki] = 0;
@@ -3297,6 +3228,7 @@ void LRVolApprox::unsetCoefKnown()
  
 //==============================================================================
 void LRVolApprox::defineRefs(LRBSpline3D* bspline, double average_out,
+			     int dir,
                              vector<LRSplineVolume::Refinement3D>& refs_x,
                              vector<LRSplineVolume::Refinement3D>& refs_y,
                              vector<LRSplineVolume::Refinement3D>& refs_z,
@@ -3503,98 +3435,104 @@ void LRVolApprox::defineRefs(LRBSpline3D* bspline, double average_out,
   double sizefac = 1.5; //3.0;
   double sizefac2 = 2.0;
   double minsize_u = std::max(2.0*usize_min_, 1.0e-8);
-  for (kj=0; kj<size1; ++kj)
+  if (dir == 1 || dir == 4)
     {
-      if (kvec_u[kj] == kvec_u[kj+1])
-	continue;
-      double u1 = mesh->kval(XDIR, kvec_u[kj]);
-      double u2 = mesh->kval(XDIR, kvec_u[kj+1]);
-      if (((u_info[kj] >= threshold || u2-u1 > sizefac*vw_elsize[kj]) &&
-	   (u2 - u1) >= minsize_u && 
-	   (u_inside[kj] == 0 || (double)u_outside[kj] > average_out)) ||
-	  u2 - u1 > sizefac2*(av_kdiff_u + av_kdiff_v + av_kdiff_w))
+      for (kj=0; kj<size1; ++kj)
 	{
-	  LRSplineVolume::Refinement3D curr_ref;
-	  double par = 0.5*(u1+u2);
-	  curr_ref.setVal(par, 
-                          bspline->vmin(), bspline->vmax(),
-                          bspline->wmin(), bspline->wmax(), 
-                          XDIR, 1);
-
-	  appendRef(refs_x, curr_ref, tol);
-	  for (ki=0; ki<elem.size(); ++ki)
+	  if (kvec_u[kj] == kvec_u[kj+1])
+	    continue;
+	  double u1 = mesh->kval(XDIR, kvec_u[kj]);
+	  double u2 = mesh->kval(XDIR, kvec_u[kj+1]);
+	  if (((u_info[kj] >= threshold || u2-u1 > sizefac*vw_elsize[kj]) &&
+	       (u2 - u1) >= minsize_u && 
+	       (u_inside[kj] == 0 || (double)u_outside[kj] > average_out)) ||
+	      u2 - u1 > sizefac2*(av_kdiff_u + av_kdiff_v + av_kdiff_w))
 	    {
-	      if (elem[ki]->umin() < par && elem[ki]->umax() > par)
-		curr_el.insert(elem[ki]);
+	      LRSplineVolume::Refinement3D curr_ref;
+	      double par = 0.5*(u1+u2);
+	      curr_ref.setVal(par, 
+			      bspline->vmin(), bspline->vmax(),
+			      bspline->wmin(), bspline->wmax(), 
+			      XDIR, 1);
+
+	      appendRef(refs_x, curr_ref, tol);
+	      for (ki=0; ki<elem.size(); ++ki)
+		{
+		  if (elem[ki]->umin() < par && elem[ki]->umax() > par)
+		    curr_el.insert(elem[ki]);
+		}
+	      refined = true;
+	      ref_x_++;
+	      div_x = 1;
 	    }
-	  refined = true;
-	  ref_x_++;
-	  div_x = 1;
 	}
     }
-
   double minsize_v = std::max(2.0*vsize_min_, 1.0e-8);
-  for (kj=0; kj<size2; ++kj)
+  if (dir == 2 || dir == 4)
     {
-      if (kvec_v[kj] == kvec_v[kj+1])
-	continue;
-      double v1 = mesh->kval(YDIR, kvec_v[kj]);
-      double v2 = mesh->kval(YDIR, kvec_v[kj+1]);
-      if (((v_info[kj] >= threshold  || v2-v1 > sizefac*wu_elsize[kj]) &&
-	   (v2 - v1) >= minsize_v && 
-	   (v_inside[kj] == 0 || (double)v_outside[kj] > average_out)) ||
-	  v2 - v1 > sizefac2*(av_kdiff_u + av_kdiff_v + av_kdiff_w))
+      for (kj=0; kj<size2; ++kj)
 	{
-	  LRSplineVolume::Refinement3D curr_ref;
-	  double par = 0.5*(v1+v2);
-	  curr_ref.setVal(par,
-			  bspline->wmin(), bspline->wmax(),
-			  bspline->umin(), bspline->umax(),
-			  YDIR, 1);
-
-	  appendRef(refs_y, curr_ref, tol);
-	  for (ki=0; ki<elem.size(); ++ki)
+	  if (kvec_v[kj] == kvec_v[kj+1])
+	    continue;
+	  double v1 = mesh->kval(YDIR, kvec_v[kj]);
+	  double v2 = mesh->kval(YDIR, kvec_v[kj+1]);
+	  if (((v_info[kj] >= threshold  || v2-v1 > sizefac*wu_elsize[kj]) &&
+	       (v2 - v1) >= minsize_v && 
+	       (v_inside[kj] == 0 || (double)v_outside[kj] > average_out)) ||
+	      v2 - v1 > sizefac2*(av_kdiff_u + av_kdiff_v + av_kdiff_w))
 	    {
-	      if (elem[ki]->vmin() < par && elem[ki]->vmax() > par)
-		curr_el.insert(elem[ki]);
+	      LRSplineVolume::Refinement3D curr_ref;
+	      double par = 0.5*(v1+v2);
+	      curr_ref.setVal(par,
+			      bspline->wmin(), bspline->wmax(),
+			      bspline->umin(), bspline->umax(),
+			      YDIR, 1);
+
+	      appendRef(refs_y, curr_ref, tol);
+	      for (ki=0; ki<elem.size(); ++ki)
+		{
+		  if (elem[ki]->vmin() < par && elem[ki]->vmax() > par)
+		    curr_el.insert(elem[ki]);
+		}
+	      refined = true;
+	      ref_y_++;
+	      div_y = 1;
 	    }
-	  refined = true;
-	  ref_y_++;
-	  div_y = 1;
-        }
+	}
     }
-  
   double minsize_w = std::max(2.0*wsize_min_, 1.0e-8);
-  for (kj=0; kj<size3; ++kj)
+  if (dir == 3 || dir == 4)
     {
-      if (kvec_w[kj] == kvec_w[kj+1])
-	continue;
-      double w1 = mesh->kval(ZDIR, kvec_w[kj]);
-      double w2 = mesh->kval(ZDIR, kvec_w[kj+1]);
-      if (((w_info[kj] >= threshold  || w2-w1 > sizefac*uv_elsize[kj]) &&
-	   (w2 - w1) >= minsize_w && 
-	   (w_inside[kj] == 0 || (double)w_outside[kj] > average_out)) ||
-	  w2 - w1 > sizefac2*(av_kdiff_u + av_kdiff_v + av_kdiff_w))
+      for (kj=0; kj<size3; ++kj)
 	{
-	  LRSplineVolume::Refinement3D curr_ref;
-	  double par = 0.5*(w1+w2);
-	  curr_ref.setVal(par,
-                          bspline->umin(), bspline->umax(), 
-                          bspline->vmin(), bspline->vmax(), 
-                          ZDIR, 1);
-
-	  appendRef(refs_z, curr_ref, tol);
-	  for (ki=0; ki<elem.size(); ++ki)
+	  if (kvec_w[kj] == kvec_w[kj+1])
+	    continue;
+	  double w1 = mesh->kval(ZDIR, kvec_w[kj]);
+	  double w2 = mesh->kval(ZDIR, kvec_w[kj+1]);
+	  if (((w_info[kj] >= threshold  || w2-w1 > sizefac*uv_elsize[kj]) &&
+	       (w2 - w1) >= minsize_w && 
+	       (w_inside[kj] == 0 || (double)w_outside[kj] > average_out)) ||
+	      w2 - w1 > sizefac2*(av_kdiff_u + av_kdiff_v + av_kdiff_w))
 	    {
-	      if (elem[ki]->wmin() < par && elem[ki]->wmax() > par)
-		curr_el.insert(elem[ki]);
-	    }
-	  refined = true;
-	  ref_z_++;
- 	  div_z = 1;
-       }
-    }
+	      LRSplineVolume::Refinement3D curr_ref;
+	      double par = 0.5*(w1+w2);
+	      curr_ref.setVal(par,
+			      bspline->umin(), bspline->umax(), 
+			      bspline->vmin(), bspline->vmax(), 
+			      ZDIR, 1);
 
+	      appendRef(refs_z, curr_ref, tol);
+	      for (ki=0; ki<elem.size(); ++ki)
+		{
+		  if (elem[ki]->wmin() < par && elem[ki]->wmax() > par)
+		    curr_el.insert(elem[ki]);
+		}
+	      refined = true;
+	      ref_z_++;
+	      div_z = 1;
+	    }
+	}
+    }
   // std::cout << "Start remove elements, refine = " << refined << ", elem size: ";
   // std::cout << elem.size() << ", elem out size: " << elem_out.size() << std::endl;
   if (refined)
@@ -3657,237 +3595,3 @@ void LRVolApprox::appendRef(vector<LRSplineVolume::Refinement3D>& refs,
     refs.push_back(curr_ref);
 }
 
- /*
-//==============================================================================
-void LRVolApprox::checkFeasibleRef(Element2D* elem, 
-				    vector<LRSplineSurface::Refinement2D>& refs,
-				    vector<Element2D*>& affected)
-//==============================================================================
-{
-  // Fetch B-splines
-  const vector<LRBSpline2D*>& bsplines = elem->getSupport();
-  size_t nmb = bsplines.size();
-
-  int degree1 = srf_->degree(XFIXED);
-  int degree2 = srf_->degree(YFIXED);
-  int xmult = (degree1 <= 3) ? 1 : 2;
-  int ymult = (degree2 <= 3) ? 1 : 2;
-  
- // Refine one B-spline with support in the parent element in one or two
-  // parameter directions depending on how many elements with a large error
-  // that lies in its support
-  // First check refinement in the u-direction
-  double u_par = 0.5*(elem->umin() + elem->umax());
-  int ixu = -1;
-  double max_wgt = 0.0;
-  size_t ki, kj;
-  for (ki=0; ki<nmb; ++ki)
-    {
-      // Count the number of elements with large error affected
-      double curr_wgt = 0.0;
-      const vector<Element2D*>& curr_el = bsplines[ki]->supportedElements();
-      for (kj=0; kj<curr_el.size(); ++kj)
-	{
-	  if (curr_el[kj]->umax() < u_par || curr_el[kj]->umin() > u_par)
-	    continue;  // Element not affected
-
-	  // Compute weight for importance of refinement
-	  double max_err, av_err;
-	  int nmb_outside;
-	  curr_el[kj]->getAccuracyInfo(av_err, max_err, nmb_outside);
-	  int nmb_pts = curr_el[kj]->nmbDataPoints();
-	  double wgt = av_err*(int)nmb_outside/(int)nmb_pts;
-	  curr_wgt += wgt;
-	}
-      if (curr_wgt > max_wgt)
-	{
-	  max_wgt = curr_wgt;
-	  ixu = (int)ki;
-	}
-    }
-	  
-  // The v-direction
-  double v_par = 0.5*(elem->vmin() + elem->vmax());
-  int ixv = -1;
-  max_wgt = 0.0;
-  for (ki=0; ki<nmb; ++ki)
-    {
-      // Count the number of elements with large error affected
-      double curr_wgt = 0.0;
-      const vector<Element2D*>& curr_el = bsplines[ki]->supportedElements();
-      for (kj=0; kj<curr_el.size(); ++kj)
-	{
-	  if (curr_el[kj]->vmax() < v_par || curr_el[kj]->vmin() > v_par)
-	    continue;  // Element not affected
-
-	  // Compute weight for importance of refinement
-	  double max_err, av_err;
-	  int nmb_outside;
-	  curr_el[kj]->getAccuracyInfo(av_err, max_err, nmb_outside);
-	  int nmb_pts = curr_el[kj]->nmbDataPoints();
-	  double wgt = av_err*(int)nmb_outside/(int)nmb_pts;
-	  curr_wgt += wgt;
-	}
-      if (curr_wgt > max_wgt)
-	{
-	  max_wgt = curr_wgt;
-	  ixv = (int)ki;
-	}
-    }
-  
-  // Fetch the affected elements in both parameter directions
-  double fac = 0.1;
-  double fac3 = 0.95;
-  vector<Element2D*> aff_u;
-  int nmb_u = 0;
-  if (ixu >= 0)
-    {
-      const vector<Element2D*>& curr_el_u = bsplines[ixu]->supportedElements();
-      for (kj=0; kj<curr_el_u.size(); ++kj)
-	{
-	  if (true ) // curr_el_u[kj]->umax() > u_par && curr_el_u[kj]->umin() < u_par
-	    {
-	      double max_err, av_err;
-	      int nmb_outside;
-	      curr_el_u[kj]->getAccuracyInfo(av_err, max_err, nmb_outside);
-	      int nmb_pts = curr_el_u[kj]->nmbDataPoints();
-	      aff_u.push_back(curr_el_u[kj]);
-	      if (nmb_outside > fac*nmb_pts || av_err > fac3*avdist_)
-		nmb_u++;
-	    }
-	}
-    }
-
-  vector<Element2D*> aff_v;
-  int nmb_v = 0;
-  if (ixv >= 0)
-    {
-      const vector<Element2D*>& curr_el_v = bsplines[ixv]->supportedElements();
-      for (kj=0; kj<curr_el_v.size(); ++kj)
-	{
-	  if (true ) // curr_el_v[kj]->vmax() > v_par && curr_el_v[kj]->vmin() < v_par
-	    {
-	      double max_err, av_err;
-	      int nmb_outside;
-	      curr_el_v[kj]->getAccuracyInfo(av_err, max_err, nmb_outside);
-	      int nmb_pts = curr_el_v[kj]->nmbDataPoints();
-	      aff_v.push_back(curr_el_v[kj]);
-	      if (nmb_outside > fac*nmb_pts || av_err > fac3*avdist_)
-		nmb_v++;
-	    }
-	}
-    }
-
-  // Assemble information
-  double fac2 = 0.5;
-  std::set<Element2D*> affected_combined;
-  if (ixu >= 0 && nmb_u > (int)fac2*bsplines[ixu]->degree(XFIXED))
-    {
-      affected_combined.insert(aff_u.begin(), aff_u.end());
-      LRSplineSurface::Refinement2D curr_ref;
-      curr_ref.setVal(u_par, bsplines[ixu]->vmin(), bsplines[ixu]->vmax(),
-		      XFIXED, xmult);
-      refs.push_back(curr_ref);
-    }
-			       
-    if (ixv >= 0 && nmb_v > (int)fac2*bsplines[ixv]->degree(YFIXED))
-    {
-      affected_combined.insert(aff_v.begin(), aff_v.end());
-      LRSplineSurface::Refinement2D curr_ref;
-      curr_ref.setVal(v_par, bsplines[ixv]->umin(), bsplines[ixv]->umax(),
-		      YFIXED, ymult);
-      refs.push_back(curr_ref);
-    }
-
-    affected.insert(affected.end(), affected_combined.begin(), affected_combined.end());
-}
-
-int comp_u_par(const void* el1, const void* el2)
-{
-  if (((double*)el1)[0] < ((double*)el2)[0])
-    return -1;
-  else if (((double*)el1)[0] > ((double*)el2)[0])
-    return 1;
-  else
-    return 0;
-}
-
-int comp_v_par(const void* el1, const void* el2)
-{
-  if (((double*)el1)[1] < ((double*)el2)[1])
-    return -1;
-  else if (((double*)el1)[1] > ((double*)el2)[1])
-    return 1;
-  else
-    return 0;
-}
-*/
-
- /*
-//==============================================================================
-void LRVolApprox::adaptSurfaceToConstraints()
-//==============================================================================
-{
-  if (srf_->dimension() != 1)
-    return;  // Only applicable for functions
-
-  if (!(has_min_constraint_ || has_max_constraint_ || has_local_constraint_))
-    return;
-
-  LRSplineSurface::BSplineMap::const_iterator it1 = srf_->basisFunctionsBegin();
-  for (; it1 != srf_->basisFunctionsEnd(); ++it1)
-    {
-      Point coef = it1->second->Coef();
-      if (has_min_constraint_)
-	coef[0] = std::max(coef[0], minval_);
-      if (has_max_constraint_)
-	coef[0] = std::min(coef[0], maxval_);
-      srf_->setCoef(coef, it1->second.get());
-      if (has_local_constraint_)
-	{
-	  double bb[2], curr_bb[2];  // Bounding box
-	  bb[0] = HUGE;
-	  bb[1] = -HUGE;
-	  
-	  // For all elements
-	  const vector<Element2D*>& elem = it1->second->supportedElements();
-	  for (size_t ki=0; ki<elem.size(); ++ki)
-	    {
-	      bool found = elem[ki]->getDataBoundingBox(curr_bb);
-	      if (found)
-		{
-		  bb[0] = std::min(bb[0], curr_bb[0]);
-		  bb[1] = std::max(bb[1], curr_bb[1]);
-		}
-	    }
-	  if (bb[1] >= bb[0])
-	    {
-	      coef[0] = std::max(coef[0], 
-				 bb[0] - constraint_fac_*(bb[1] - bb[0]));
-	      coef[0] = std::min(coef[0], 
-				 bb[1] + constraint_fac_*(bb[1] - bb[0]));
-	    }
-	}
-    }
-}
- */
-/*
-//==============================================================================
-void LRVolApprox::turnTo3D()
-//==============================================================================
-{
-  if (!srf_->dimension() == 1)
-    return;  // Not possible to make 3D surface
-
-  // Make data points 3D
-  for (LRSplineSurface::ElementMap::const_iterator it=srf_->elementsBegin();
-       it != srf_->elementsEnd(); ++it)
-    {
-      it->second->makeDataPoints3D();
-    }
-  
-  // Turn surface into 3D
-  srf_->to3D();
-}
-
- */

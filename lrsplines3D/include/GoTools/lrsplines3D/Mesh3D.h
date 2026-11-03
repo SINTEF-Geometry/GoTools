@@ -48,6 +48,7 @@
 #include "GoTools/geometry/Streamable.h"
 #include "GoTools/utils/Array.h"
 #include "GoTools/lrsplines2D/MeshLR.h"
+#include "GoTools/lrsplines2D/Mesh2D.h"
 #include "GoTools/lrsplines3D/Direction3D.h"
 #include "GoTools/lrsplines3D/Mesh3DIterator.h"
 #include "GoTools/lrsplines3D/IndexMesh3DIterator.h"
@@ -118,21 +119,28 @@ public:
   Mesh3D(std::istream& is); 
 
   /// Construct a full, 'tensor product' mesh, based on two knotvectors, expressed
-  /// in the provided ranges [kx_start, kx_end] and [ky_start, ky_end].  Multiplicities > 1
-  /// are allowed, and expressed by repeated values in the ranges.
+  /// in the provided ranges [kx_start, kx_end], [ky_start, ky_end] and
+  /// [kz_start, kz_end].  Multiplicities > 1 are allowed, and expressed 
+  /// by repeated values in the ranges.
   template<typename Iterator> 
   Mesh3D(Iterator kx_start, Iterator kx_end,
 	 Iterator ky_start, Iterator ky_end,
 	 Iterator kz_start, Iterator kz_end);
  
-  /// Construct a full, 'tensor product' mesh, based on two knotvectors, expressed
-  /// in the provided 1-D arrays 'xknots' and 'yknots'.  The arrays must have begin()
-  /// and end() member methods.  Multiplicities > 1 are allowed, and expressed by repeated
-  // values.
+  /// Construct a full, 'tensor product' mesh, based on three knotvectors, 
+  /// expressed in the provided 1-D arrays 'xknots', 'yknots' and zknots.  
+  /// The arrays must have begin() and end() member methods.
+  /// Multiplicities > 1 are allowed, and expressed by repeated values.
   template<typename Array>
   Mesh3D(const Array& xknots,
 	 const Array& yknots,
 	 const Array& zknots);
+
+  /// Construct a triviarate mesh from a bivariate (Mesh2D) mesh and a given
+  /// knot vector in the third parameter direction
+  /// Parameter direction corresponding to the curve
+  /// cvdir=1 : XDIR, cvdir=2: YDIR, cvdir=3: ZDIR
+  Mesh3D(const Mesh2D& mesh2d, std::vector<double>& cvknots, int cvdir);
   
   /// Read the mesh from a stream
   virtual void read(std::istream& is);        
@@ -438,8 +446,8 @@ void Mesh3D::init_(Iterator kx_start, Iterator kx_end,
   // should be strictly increasing).
   std::vector<int> mult_x, mult_y, mult_z; // will be used to store multiplicities
   knotvals_x_ = compactify_knotvec_(kx_start, kx_end, mult_x); // sequence of unique knot values returned,
-  knotvals_y_ = compactify_knotvec_(ky_start, ky_end, mult_y); // while multiplicities go to 'mult_x'/'y'.
-  knotvals_z_ = compactify_knotvec_(kz_start, kz_end, mult_z); // while multiplicities go to 'mult_x'/'y'.
+  knotvals_y_ = compactify_knotvec_(ky_start, ky_end, mult_y); // while multiplicities go to 'mult_x'/'y'/,z,.
+  knotvals_z_ = compactify_knotvec_(kz_start, kz_end, mult_z); 
 
   // We fill all the rectangles with the full domain since the inital knots are global.
   mrects_x_ = std::vector<std::vector<GPos2D> >(knotvals_x_.size(), std::vector<GPos2D>());

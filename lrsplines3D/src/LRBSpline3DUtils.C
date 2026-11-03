@@ -138,13 +138,6 @@ LRBSpline3DUtils::derive_knots(const Mesh3D& m, Direction3D d, int beg, int end,
 {
   assert(new_knot_ix > orig.suppMin(d) && new_knot_ix < orig.suppMax(d));
 
-#ifndef NDEBUG
-  if (orig.rational())
-  {
-      ;//MESSAGE("Rational case under implementation, expect errors!");
-  }
-#endif
-
   // defining the following two constants for code readability purposes
   const int degree = orig.degree(d);
   const double new_kval = kvals[new_knot_ix];

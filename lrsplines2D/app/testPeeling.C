@@ -152,7 +152,8 @@ int main () {
   cout << "numBasisFunctions: " << lrs.numBasisFunctions() << endl;
 
   // Check for overloading.
-  vector<LRBSpline2D*> funs = LinDepUtils::unpeelableBasisFunctions(lrs);
+  int minnmb = 8;
+  vector<LRBSpline2D*> funs = LinDepUtils::fetchUnpeelable(lrs, minnmb);
   cout << "Number of unpeelable LR B-splines: " << funs.size() << endl;
   cout << "LR spline is peelable: " << ((funs.size()==0) ? "Yes" : "No") << "!" << endl;
   //bool lrs_is_ovl = isPeelable(lrs);

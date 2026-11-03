@@ -298,6 +298,9 @@ namespace VolumeTools {
 		       double& u,
 		       double& v,
 		       double& w);
+
+  void volume_ratder(double const eder[],int idim,int ider,double gder[]);
+
   } // namespace VolumeTools
 
 } // namespace Go

@@ -174,7 +174,7 @@ namespace SplineUtils {
 
     /// This function takes as input the position and a certain number of derivatives
     /// in homogenous space of a point on a rational surface.  It outputs the 
-    /// positioin and derivatives of this point in non-homogenous ("ordinary") space.
+    /// position and derivatives of this point in non-homogenous ("ordinary") space.
     /// (Corresponds to s6strider in SISL)
     /// \param  eder pointer to double array of dimenson [(ider+1)*(ider+2)*(idim+1)/2]
     ///              containing the position and the derivative vectors
@@ -195,7 +195,7 @@ namespace SplineUtils {
     /// \param gder pointer to the array where the result will be written (in same order
     ///             as 'eder').
     void GO_API surface_ratder(double const eder[],int idim,int ider,double gder[]);
-
+ 
     /// Corresponds to s1701 in SISL
     /// This function computes in a compact format a line in the discrete
     /// B-spline matrix converting between an orginal basis

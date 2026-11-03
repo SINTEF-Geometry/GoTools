@@ -38,7 +38,8 @@
  */
 
 #include "GoTools/trivariate/SplineVolume.h"
-#include "GoTools/geometry/SplineUtils.h"
+#include "GoTools/trivariate/VolumeTools.h"
+//#include "GoTools/geometry/SplineUtils.h"
 
 using namespace std;
 
@@ -59,7 +60,7 @@ namespace Go
     };
   } // anonymous namespace
 
-void volume_ratder(double const eder[],int idim,int ider,double gder[]);
+  //void volume_ratder(double const eder[],int idim,int ider,double gder[]);
 
 
 
@@ -271,7 +272,7 @@ void  SplineVolume::point(vector<Point>& pts,
     // Copy from restemp to result
     if (rational_) {
 	vector<double> restemp2(totpts*dim_);
-	volume_ratder(&restemp[0], dim_, derivs, &restemp2[0]);
+	VolumeTools::volume_ratder(&restemp[0], dim_, derivs, &restemp2[0]);
 	for (int i = 0; i < totpts; ++i) {
 	    for (int d = 0; d < dim_; ++d) {
 		pts[i][d] = restemp2[i*dim_ + d];
@@ -630,7 +631,7 @@ void SplineVolume::pointsGrid(int numu, int numv, int numw,
 	// Store result in point vector. Handle rational case
 	if (rational_)
 	  {
-	    volume_ratder(&temp_dudvdwp[0], dim_, derivs, &points[points_pos]);
+	    VolumeTools::volume_ratder(&temp_dudvdwp[0], dim_, derivs, &points[points_pos]);
 	    points_pos += dim_*(derivs+1)*(derivs+2)*(derivs+3)/6;
 	  }
 	else

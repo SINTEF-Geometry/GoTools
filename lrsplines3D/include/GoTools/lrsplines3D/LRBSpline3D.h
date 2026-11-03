@@ -78,7 +78,7 @@ class LRBSpline3D : public Streamable
 
   //template<typename Iterator>
   /// Constructor
-  /// \param c_g coefficient
+  /// \param c_g coefficient multiplied with the scaling factor. The rational weight is not expected to be multiplied with the coefficient
   /// \param weight rational weight (1 if non-rational volume)
   /// \param bspline_u univariate B-spline in first parameter direction
   /// \param bspline_v univariate B-spline in second second direction
@@ -98,7 +98,10 @@ class LRBSpline3D : public Streamable
     bspline_u_(bspline_u),
     bspline_v_(bspline_v),
     bspline_w_(bspline_w),
-    coef_fixed_(0)
+    nest_level_(-1),
+    coef_fixed_(0),
+      overload_(false),
+    visited_(false)
     {
       bspline_u_->incrCount();
       bspline_v_->incrCount();
@@ -120,6 +123,7 @@ class LRBSpline3D : public Streamable
     std::swap(bspline_v_, rhs.bspline_v_);
     std::swap(bspline_w_, rhs.bspline_w_);
     std::swap(coef_fixed_,rhs.coef_fixed_);
+    std::swap(overload_,rhs.overload_);
  }
 
   /// Destructor
@@ -151,8 +155,6 @@ class LRBSpline3D : public Streamable
   // --- EVALUATION FUNCTION ---
   // ---------------------------
 
-  /// Read the LRBSpline2D from a stream
-  /// Do not use this function. Will create memory loss
   double evalBasisFunc(double u, double v, double w) const;
 
   /// Similar to 'eval' below, but returns the value of the
@@ -162,15 +164,6 @@ class LRBSpline3D : public Streamable
   /// before it is returned.) If u_deriv = n1, v_deriv = n2 and
   /// w_deriv = n3, the function returns the partial derivative
   /// d^(n1+n2+n3) B / du^n1 dv^n2 dw^n3
-  // @@@ VSK. Appropriate for rationals?
-  /* double evalBasisFunction(double u, double v, double w, */
-  /*                          const double* const kvals_u, */
-  /*                          const double* const kvals_v, */
-  /*                          const double* const kvals_w, */
-  /* 			   int u_deriv = 0, int v_deriv = 0, int w_deriv = 0, */
-  /* 			   bool u_at_end = false, bool v_at_end = false,  */
-  /* 			   bool w_at_end = false) const; */
-
   double evalBasisFunction(double u, double v, double w,
                            int u_deriv = 0, int v_deriv = 0, int w_deriv = 0,
                            bool u_at_end = false, bool v_at_end = false, 
@@ -187,20 +180,18 @@ class LRBSpline3D : public Streamable
   /// the domain. The basis function itself has no knowledge of the
   /// underlying mesh, so this information has to be given explicitly
   /// using the 'u_at_end', 'v_at_end' and 'w_at_end' parameters.
-  // @@@ VSK. I am not sure if I like the way of distributing position and
-  // derivatives, but it is not top level. What about mixed derivatives?
-  // What about rationals? Should maybe look at SplineSurface for interface.
-
-
+  /// Note that the the B-spline stores the rational parameter, but is not
+  /// responsible for involving it in computations. To compute the value
+  /// of the B-spline times the coefficient in the rational case call
+  /// evalBasisFunction and fetch the weight and the coefficient. See also
+  /// point() and operator() in LRSplineVolume.
   Point eval(double u, double v, double w,
              int u_deriv = 0, int v_deriv = 0, int w_deriv = 0,
              bool u_at_end = false, bool v_at_end = false, bool w_at_end = false) const
   {
     if (rational_)
       {
-        //MESSAGE("Rational case under construction!");
-        if (u_deriv > 0 || v_deriv > 0 || w_deriv > 0)
-          MESSAGE("Rational case with derivs not yet supported!");
+        MESSAGE("Rational case not expected!");
       }
 
     Point geom_pos =
@@ -211,29 +202,10 @@ class LRBSpline3D : public Streamable
 
   }
 
-  /* Point eval(double u, double v, double w, */
-  /* 	     const double* const kvals_u, const double* const kvals_v, const double* const kvals_w, */
-  /* 	     int u_deriv = 0, int v_deriv = 0, int w_deriv = 0, */
-  /* 	     bool u_at_end = false, bool v_at_end = false, bool w_at_end = false) const */
-  /* {  */
-  /*   if (rational_) */
-  /*     { */
-  /* 	MESSAGE("Rational case under construction!"); */
-  /* 	if (u_deriv > 0 || v_deriv > 0 || w_deriv > 0) */
-  /* 	  MESSAGE("Rational case with derivs not yet supported!"); */
-  /*     } */
-
-
-  /*   Point geom_pos = */
-  /*     evalBasisFunction(u, v, w, kvals_u, kvals_v, kvals_w, u_deriv, v_deriv, w_deriv, u_at_end, v_at_end, w_at_end) *  */
-  /*     coefTimesGamma(); */
-
-  /*   return geom_pos; */
-      
-  /* } */
 
   /// Evaluate position only, array of correct size is expected as
   /// input. No size checking
+  /// See eval() for rationals
   void evalpos(double u, double v, double w, double pos[])
   {
     double bb = evalBasisFunc(u, v, w);
@@ -250,6 +222,8 @@ class LRBSpline3D : public Streamable
   /// \param deriv number of derivative to evaluate (0 = only position)
   /// \param der array of length (deriv+1)*(deriv+2)*(deriv+3)/6 for accumulated 
   /// storage of derivatives. Sequence: p, du, dv, dw, duu, duv, duw, dvv, dvw, dww, ...
+  /// Note that for rational the output points are in homogenous space, i.e.
+  /// the dimension is eqal to dim+1
   void evalder_add(double u, double v, double w,
 		   int deriv,
 		   Point der[],
@@ -338,6 +312,18 @@ class LRBSpline3D : public Streamable
     return bspline_w_->max();
   }
 
+  double pmin(Direction3D d)
+  {
+    return (d == XDIR) ? bspline_u_->min() :
+      ((d == YDIR) ? bspline_v_->min() : bspline_w_->min());
+  }
+  
+  double pmax(Direction3D d)
+  {
+    return (d == XDIR) ? bspline_u_->max() :
+      ((d == YDIR) ? bspline_v_->max() : bspline_w_->max());
+  }
+  
   double knotval(Direction3D d, int kn) const
   {
     return (d == XDIR) ? bspline_u_->knotval(kn) :
@@ -424,7 +410,49 @@ class LRBSpline3D : public Streamable
   bool overlaps(Element3D *el) const;
   /// Check if the support of this B-spline overlaps the given domain: umin, umax, vmin, vmax, wmin, wmax.
   bool overlaps(double domain[]) const; // domain: umin, umax, vmin, vmax, wmin, wmax.
+  bool overlaps(LRBSpline3D* bsp) const;
 
+  /// Check if the support of this B-spline cover the given domain: umin, umax, vmin, wmax.
+  bool covers(double domain[]) const;
+  bool covers(LRBSpline3D* bsp) const;
+
+  void getOverlapping(std::vector<LRBSpline3D*>& overlap);
+
+  bool contains(double u, double v, double w)
+  {
+    if (u < umin() || u > umax() || v < vmin() || v > vmax() ||
+	w < wmin() || w > wmax())
+      return false;
+    else
+      return true;
+  }
+  
+  /// Set nesting level. Only for internal use
+  void setNestLevel(int nest_level)
+  {
+    nest_level_ = nest_level;
+  }
+  /// Get nesting level. Used in linear dependence check and projections
+  int getNestLevel()
+  {
+    return nest_level_;
+  }
+
+  /// Check if the nesting level is set
+  bool hasNestLevel()
+  {
+    return (nest_level_ >= 0);
+  }
+
+  /// Set nesting level to unknown
+  void unsetNestLevel()
+  {
+    nest_level_ = -1;
+  }
+
+  /// Compute nesting level
+  void computeNestLevel();
+  
   /// Add element to vector of elements in the support
   bool addSupport(Element3D *el) ;
   /// Remove element from vector of elements in the support
@@ -435,6 +463,30 @@ class LRBSpline3D : public Streamable
     support_.clear();
   }
   
+  bool getOverload()
+  {
+    return overload_;
+  }
+  
+  bool checkOverload();
+  
+  void eraseOverload()
+  {
+    overload_ = false;
+  }
+
+  bool adaptProjCoef(Point& coef);
+  
+  bool visited()
+  {
+    return visited_;
+  }
+
+  void setVisited(bool visited)
+  {
+    visited_ = visited;
+  }
+
   /// Iterator to start of elements in the support
   std::vector<Element3D*>::iterator supportedElementBegin() ;
   /// Iterator to end of elements in the support
@@ -504,9 +556,17 @@ class LRBSpline3D : public Streamable
   BSplineUniLR *bspline_w_;
   std::vector<Element3D*> support_;  // Elements lying in the support of this LRB-spline
   
+  int nest_level_; // Nesting depth. Tells about complete inclusion of the
+  // domain in the domain of another B-spline
+  
   // Used in approximation algorithms
   int coef_fixed_;  // 0=free coefficients, 1=fixed, 2=not affected
 
+  mutable bool overload_;
+  mutable bool visited_;
+  
+  double nestingWeight(LRBSpline3D* other);
+  
 }; // end class LRBSpline3D
 
  inline std::ostream& operator<<(std::ostream& os, const LRBSpline3D& b) {b.write(os); return os;}

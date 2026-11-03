@@ -262,12 +262,12 @@ struct LSSmoothData
 
   int getNmbOutsideTol()
   {
-    return nmb_outside_tol_;
+    return (data_points_.size() == 0) ? 0 : nmb_outside_tol_;
   }
 
   int getNmbSignOutsideTol()
   {
-    return nmb_outside_tol_;
+    return nmb_sign_outside_tol_;
   }
 
   void getInfoSignificantPoints(int dim, double& maxdist, double& avdist,
@@ -491,6 +491,17 @@ public:
 	double umax() const         { return stop_u_;  };
    /// End parameter in the second parameter direction
    double vmax() const         { return stop_v_;  };
+
+   double pmin(Direction2D d)
+   {
+     return (d == XFIXED) ? start_u_ : start_v_;
+   }
+   
+   double pmax(Direction2D d)
+   {
+     return (d == XFIXED) ? stop_u_ : stop_v_;
+   }
+   
    /// Area of element domain
    double area() const         { return (stop_v_-start_v_)*(stop_u_-start_u_);  };
 

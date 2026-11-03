@@ -39,6 +39,7 @@
 
 #include "GoTools/lrsplines3D/LRSplinePlotUtils3D.h"
 #include "GoTools/lrsplines3D/Mesh3DIterator.h"
+#include "GoTools/lrsplines3D/Element3D.h"
 #include "GoTools/geometry/LineCloud.h"
 
 using std::vector;
@@ -46,7 +47,7 @@ using std::vector;
 namespace Go
 {
 
-  void writeElementLineCloud(Go::LRSplineVolume& lr_spline_vol, std::ostream &out)
+  void writeElementLineCloud(LRSplineVolume& lr_spline_vol, std::ostream &out)
   {
     const int dim = 3;
     vector<double> min(3), max(3), left(3), right(3);
@@ -93,7 +94,7 @@ namespace Go
     line_cl.write(out);
   }
 
-  void writePostscriptMesh(Go::LRSplineVolume& lr_spline_vol, std::ostream &out)
+  void writePostscriptMesh(LRSplineVolume& lr_spline_vol, std::ostream &out)
   {
     MESSAGE("writePostscriptMesh(): Under construction.");
     // @@sbr I guess this function only applies for iso-surfaces,
@@ -202,4 +203,113 @@ namespace Go
 #endif
   }
 
+
+  // Extract information from a current LR spline volume in order to
+  // visualize the structure of the parameter domain
+  void extractElementMidAndBoundary(shared_ptr<LRSplineVolume>& vol,
+				    vector<double>& mid,
+				    vector<double>& bd)
+  {
+    int num_el = vol->numElements();
+    mid.resize(3*num_el);   // Mid parameters of each element (xmid, ymid, zmid)
+    bd.resize(72*num_el);   // The element corners orginized as corner curves
+  
+    int ki=0, kj=0;
+    Point pos, pos2, dir1, dir2, dir3;
+    for (auto it=vol->elementsBegin(); it != vol->elementsEnd(); ++it)
+      {
+	const Element3D* elem = it->second.get();
+	double umin = elem->umin();
+	double umax = elem->umax();
+	double vmin = elem->vmin();
+	double vmax = elem->vmax();
+	double wmin = elem->wmin();
+	double wmax = elem->wmax();
+	mid[ki++] = 0.5*(umin+umax);
+	mid[ki++] = 0.5*(vmin+vmax);
+	mid[ki++] = 0.5*(wmin+wmax);
+
+	pos = Point(umin, vmin, wmin);
+	dir1 = Point(umax-umin, 0.0, 0.0);
+	dir2 = Point(0.0, vmax-vmin, 0.0);
+	dir3 = Point(0.0, 0.0, wmax-wmin);
+
+	pos2 = pos+dir1;
+	for (int ka=0; ka<3; ++ka)
+	  bd[kj++] = pos[ka];
+	for (int ka=0; ka<3; ++ka)
+	  bd[kj++] = pos2[ka];
+
+	pos2 = pos+dir2;
+	for (int ka=0; ka<3; ++ka)
+	  bd[kj++] = pos[ka];
+	for (int ka=0; ka<3; ++ka)
+	  bd[kj++] = pos2[ka];
+
+	pos2 = pos+dir3;
+	for (int ka=0; ka<3; ++ka)
+	  bd[kj++] = pos[ka];
+	for (int ka=0; ka<3; ++ka)
+	  bd[kj++] = pos2[ka];
+
+	pos += dir1;
+	pos2 = pos+dir2;
+	for (int ka=0; ka<3; ++ka)
+	  bd[kj++] = pos[ka];
+	for (int ka=0; ka<3; ++ka)
+	  bd[kj++] = pos2[ka];
+
+	pos2 = pos+dir3;
+	for (int ka=0; ka<3; ++ka)
+	  bd[kj++] = pos[ka];
+	for (int ka=0; ka<3; ++ka)
+	  bd[kj++] = pos2[ka];
+
+	pos += dir2;
+	pos2 = pos-dir1;
+	for (int ka=0; ka<3; ++ka)
+	  bd[kj++] = pos[ka];
+	for (int ka=0; ka<3; ++ka)
+	  bd[kj++] = pos2[ka];
+
+	pos2 = pos+dir3;
+	for (int ka=0; ka<3; ++ka)
+	  bd[kj++] = pos[ka];
+	for (int ka=0; ka<3; ++ka)
+	  bd[kj++] = pos2[ka];
+
+	pos += dir3;
+	pos2 = pos-dir1;
+	for (int ka=0; ka<3; ++ka)
+	  bd[kj++] = pos[ka];
+	for (int ka=0; ka<3; ++ka)
+	  bd[kj++] = pos2[ka];
+
+	pos2 = pos-dir2;
+	for (int ka=0; ka<3; ++ka)
+	  bd[kj++] = pos[ka];
+	for (int ka=0; ka<3; ++ka)
+	  bd[kj++] = pos2[ka];
+
+	pos -= dir1;
+	pos2 = pos-dir2;
+	for (int ka=0; ka<3; ++ka)
+	  bd[kj++] = pos[ka];
+	for (int ka=0; ka<3; ++ka)
+	  bd[kj++] = pos2[ka];
+
+	pos2 = pos-dir3;
+	for (int ka=0; ka<3; ++ka)
+	  bd[kj++] = pos[ka];
+	for (int ka=0; ka<3; ++ka)
+	  bd[kj++] = pos2[ka];
+
+	pos -= dir2;
+	pos2 = pos+dir1;
+	for (int ka=0; ka<3; ++ka)
+	  bd[kj++] = pos[ka];
+	for (int ka=0; ka<3; ++ka)
+	  bd[kj++] = pos2[ka];
+      }
+  }
 }

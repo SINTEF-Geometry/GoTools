@@ -51,6 +51,7 @@
 
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/geometry/LineCloud.h"
+#include "GoTools/lrsplines2D/LRBasisEvalResult.h"
 #include "GoTools/lrsplines2D/Mesh2D.h"
 #include "GoTools/lrsplines2D/BSplineUniLR.h"
 #include "GoTools/lrsplines2D/LRBSpline2D.h"
@@ -155,6 +156,10 @@ namespace Go
 
   static ElemKey generate_key(const double&, const double&);
 
+  //   BsplineIndexMap: Maps each B-spline (represented by a pointer
+  //     to a LRBSpline2D) to a linear Index.
+  typedef std::map<LRBSpline2D*, size_t> Bspline2DIndexMap;
+  
   // ----------------------------------------------------
   // ---- CONSTRUCTORS, COPY, SWAP AND ASSIGNMENT -------
   // ----------------------------------------------------
@@ -235,7 +240,8 @@ namespace Go
   // ------- READ AND WRITE FUNCTIONALITY ---------------
   // ----------------------------------------------------
   virtual void  read(std::istream& is);
-  virtual void write(std::ostream& os) const; 
+  virtual void write(std::ostream& os) const;
+  void writeSpecHeader(std::ostream& os, int r, int g, int b, int d, int id) const;
 
   // ----------------------------------------------------
   // Inherited from GeomObject
@@ -497,6 +503,11 @@ namespace Go
     virtual void 
       getCornerPoints(std::vector<std::pair<Point,Point> >& corners) const;
 
+  /// Fetch parameter values of corners adjacent to specified edge
+  /// Edges are numbered: 0=left, 1=right, 2=lower, 3=upper
+  void fetchEdgeCorners(int edge_num, double& u1, double& v1, double& u2,
+			double& v2) const;
+
     /// Generate and return a SplineCurve that represents a constant parameter 
     /// curve on the surface
     /// \param parameter value of the fixed parameter
@@ -576,22 +587,175 @@ namespace Go
   /// Total number of elements (mesh cells)
   int numElements() const {return (int)emap_.size();}
 
-#if 0
-  // @@@ VSK. This functionality interface is fetched from the Trondheim code
-  // We need a storage for last element evaluated. Index or reference?
-  // Should the element be identified by index or reference?
-  // How should the set of elements be traversed? Iterator?
-  void computeBasis (double param_u, double param_v, BasisPtsSf     & result, int iEl=-1 ) const;
-  void computeBasis (double param_u, double param_v, BasisDerivsSf  & result, int iEl=-1 ) const;
-  void computeBasis (double param_u, double param_v, BasisDerivsSf2 & result, int iEl=-1 ) const;
+  /// Number of univariate B-splines used in the construction of the
+  /// bivariate B-splines
+  int numUnivariateBSplines(Direction2D d) const
+  {
+    if (d == XFIXED)
+      return (int)bsplinesuni1_.size();
+    else if (d == YFIXED)
+      return (int)bsplinesuni2_.size();
+    else
+      return 0;
+  }
+
+  /// Fetch pointer to a specified univariate B-spline
+  /// Note: Must not be put into a shared pointer or unique pointer
+  BSplineUniLR* getUnivariateBSpline(Direction2D d, int ix) const
+  {
+    if (d == XFIXED && ix >= 0 && ix < (int)bsplinesuni1_.size())
+      return bsplinesuni1_[ix].get();
+    else if (d == YFIXED && ix >= 0 && ix < (int)bsplinesuni2_.size())
+      return bsplinesuni2_[ix].get();
+    else
+      return 0;
+  }
+
+
+    /// Convenience to be used in computations of basis grids
+    typedef std::vector<double>  Dvector; 
+    /// Convenience to be used in computations of basis grids
+    typedef std::vector<Dvector> Dmatrix;
+  
+    /// Evaluate positions of all basis values in a specified
+    /// grid.  For non-rationals this is an interface to BsplineBasis::computeBasisValues 
+    /// where the basis values in each parameter direction are multiplied to 
+    /// compute B_i(u)*B_j(v), for rationals the routine evaluates the rational 
+    /// basis functions, i.e. the basis functions are divided by the denominator of the surface in 
+    /// the given parameter direction
+    /// \param param_u this vector holds all the numerical values for the first parameter 
+    ///                where evaluation will tak place
+    /// \param param_v this vector holds all the numerical values for the second parameter 
+    ///                where evaluation will tak place
+    /// \param basisValues the value of all basis functions. The first matrix dimension 
+    ///                will correspond to all evaluation parameters, i.e. the size is 
+    ///                param_u.size()*param_v*size(). The second 
+    ///                dimension correspond to all coefficients, i.e. 
+    ///                nmb_coef_u*nmb_coef_v. Most entries in the matrix
+    ///                will be zero
+    void computeBasisGrid(const Dvector& param_u,
+			  const Dvector& param_v,
+			  Dmatrix& basisValues,
+			  Bspline2DIndexMap& bmap) const;
+
+     /// Compute basis values (position) in the parameter (param_u,param_v).
+    /// Store result in a BasisPtsSf entity
+    void computeBasis(double param_u,
+		      double param_v,
+		      LRBasisPtsSf& result) const;
+
+    /// Compute basis values (position) in the parameter (param_u,param_v).
+    /// Store result in a BasisPtsSf entity
+    void computeBasis(double param_u,
+		      double param_v,
+		      Element2D *elem,
+		      LRBasisPtsSf& result) const;
+  
+    /// Compute basis values (position and 1. derivatives) in the parameter 
+    /// (param_u,param_v). Store result in a BasisDerivSf entity
+    void computeBasis(double param_u,
+		      double param_v,
+		      LRBasisDerivsSf& result) const;
+  
+    /// Compute basis values (position and 1. derivatives) in the parameter 
+    /// (param_u,param_v). Store result in a BasisDerivSf entity
+    void computeBasis(double param_u,
+		      double param_v,
+		      Element2D* elem,
+		      LRBasisDerivsSf& result) const;
+  /*  
+    /// Compute basis values (position and uni-directed derivatives) in the parameter
+    /// (param_u,param_v). Store result in a BasisDerivsSfU entity
+    void computeBasis(double param_u,
+		      double param_v,
+                      int derivs,
+		      BasisDerivsSfU& result, Element2D* elem,
+		      bool evaluate_from_right = true) const;
+  */
+    /// Compute basis values (position and 1. and 2. derivatives) in the parameter 
+    /// (param_u,param_v). Store result in a BasisDerivSf2 entity
+     void computeBasis(double param_u,
+		       double param_v,
+		       LRBasisDerivsSf2& result) const;
+
+     void computeBasis(double param_u,
+		       double param_v,
+		       Element2D* elem,
+		       LRBasisDerivsSf2& result) const;
+
+    /// Compute basis values (position and 1., 2. and 3. derivatives) in the parameter
+    /// (param_u,param_v). Store result in a BasisDerivSf3 entity
+    void computeBasis(double param_u,
+		      double param_v,
+		      LRBasisDerivsSf3& result) const;
+
+     void computeBasis(double param_u,
+                       double param_v,
+		       Element2D* elem,
+                       LRBasisDerivsSf3& result) const;
+  
+     /// Compute basis grid (position) in the parameter pairs combined from param_u
+    /// and param_v. Store result in a vector of BasisPtsSf.
+    void computeBasisGrid(const Dvector& param_u,
+			  const Dvector& param_v,
+			  std::vector<LRBasisPtsSf>& result) const;
+  
+  
+    /// Evaluate positions and first derivatives of all basis values in a specified
+    /// grid.  For non-rationals this is an interface to BsplineBasis::computeBasisValues 
+    /// where the basis values in each parameter direction are multiplied to 
+    /// compute B_i(u)*B_j(v), for rationals the routine evaluates the rational 
+    /// basis functions, i.e. the basis functions are divided by the denominator of the surface in 
+    /// the given parameter direction
+    /// \param param_u this vector holds all the numerical values for the first parameter 
+    ///                where evaluation will tak place
+    /// \param param_v this vector holds all the numerical values for the second parameter 
+    ///                where evaluation will tak place
+    /// \param basisValues the value of all basis functions. The first matrix dimension 
+    ///                will correspond to all evaluation parameters, i.e. the size is 
+    ///                param_u.size()*param_v*size(). The second 
+    ///                dimension correspond to all coefficients, i.e. 
+    ///                nmb_coef_u*nmb_coef_v. Most entries in the matrix
+    ///                will be zero
+    /// \param basisDerivs_u the derivative of all basis functions, size as above
+    /// \param basisDerivs_v the derivative of all basis functions
+    /// \param evaluate_from_right specifies directional derivatives, true=right, false=left
+    void computeBasisGrid(const Dvector& param_u,
+			  const Dvector& param_v,
+			  Dmatrix& basisValues,
+			  Dmatrix& basisDerivs_u,
+			  Dmatrix& basisDerivs_v,
+			  Bspline2DIndexMap& bmap) const;
+
+    /// Compute basis grid (position and 1. derivatives) in the parameter pairs 
+    /// combined from param_u and param_v. Store result in a vector of BasisDerivSf.
+    void computeBasisGrid(const Dvector& param_u,
+			  const Dvector& param_v,
+			  std::vector<LRBasisDerivsSf>& result) const; 
+
+
+    /// Compute basis grid (position and 1. and 2. derivatives) in the parameter pairs 
+    /// combined from param_u and param_v. Store result in a vector of BasisDerivSf2.
+    void computeBasisGrid(const Dvector& param_u,
+			  const Dvector& param_v,
+			  std::vector<LRBasisDerivsSf2>& result) const;
+
+    /// Compute basis grid (position and 1., 2. and 3. derivatives) in the parameter pairs
+    /// combined from param_u and param_v. Store result in a vector of BasisDerivSf3.
+    void computeBasisGrid(const Dvector& param_u,
+                          const Dvector& param_v,
+                          std::vector<LRBasisDerivsSf3>& result) const;
+  
+  /*
+  void computeBasis (double param_u, double param_v, BasisPtsSf& result, Element2D* elem) const;
+  void computeBasis (double param_u, double param_v, BasisDerivsSf& result, Element2D* elem) const;
+  void computeBasis (double param_u, double param_v, BasisDerivsSf2& result, iElement2D* elem) const;
   void computeBasis (double param_u,
 		     double param_v,
 		     std::vector<std::vector<double> >& result,
 		     int derivs=0,
-		     int iEl=-1 ) const;
-  int getElementContaining(double u, double v) const;
-#endif
-  
+		     Element2D* elem=NULL) const;
+  */ 
   // Returns a pair.  
   // The first element of this pair is a pair of doubles representing the lower-left
   // corner of the element in which the point at (u, v) is located.  
@@ -636,6 +800,10 @@ namespace Go
   /// \param atstart specifies if the curve is in the start or end of the
   /// other parameer direction
   std::vector<LRBSpline2D*> getBoundaryBsplines(Direction2D d, bool atstart);
+
+  void getBSplinesAtOpening(Direction2D d, double val,
+			    std::vector<LRBSpline2D*>& bspl_lower,
+			    std::vector<LRBSpline2D*>& bspl_upper);
 
   /// Returns 'true' if the underlying mesh is a regular grid, i.e. 
   /// the surface is a tensor product spline surface.
@@ -746,6 +914,19 @@ namespace Go
     curr_element_ = curr_el;
   }
 
+  // For 1D surfaces the endpoints of the lines are given as (u,v,f(u,v))
+  LineCloud getElementBds(int num_pts = 5) const;
+
+  // Private constructor given mesh and a collection of LR B-splines
+  // Also used from lr volume
+  // Updates mesh pointers in B-splines
+  LRSplineSurface(double knot_tol, bool rational,
+  		  Mesh2D& mesh, 
+		  std::vector<LRBSpline2D*>& b_splines,
+		  int first_ixu, int first_ixv);
+
+  void setNestLevel();
+
   // ----------------------------------------------------
   // --------------- DEBUG FUNCTIONS --------------------
   // ----------------------------------------------------
@@ -759,16 +940,6 @@ namespace Go
   /* // NB: requires a wide character stream (wostream). */
   /* void plotBasisFunctionSupports(std::wostream& os) const; */
 
-  // For 1D surfaces the endpoints of the lines are given as (u,v,f(u,v))
-  LineCloud getElementBds(int num_pts = 5) const;
-
-  // Private constructor given mesh and a collection of LR B-splines
-  // Also used from lr volume
-  // Updates mesh pointers in B-splines
-  LRSplineSurface(double knot_tol, bool rational,
-  		  Mesh2D& mesh, 
-		  std::vector<LRBSpline2D*>& b_splines,
-		  int first_ixu, int first_ixv);
  private:
 
   // ----------------------------------------------------
@@ -782,10 +953,10 @@ namespace Go
 
   Mesh2D mesh_;           // Represents mesh topology, multiplicites, as well as knot values.
 
-  // Map of individual univariate b-spline basis functions, 1. par. dir.  
+  // Vector of individual univariate b-spline basis functions, 1. par. dir.  
   std::vector<std::unique_ptr<BSplineUniLR> > bsplinesuni1_;  // To be kept sorted   
 
-  // Map of individual univariate b-spline basis functions, 2. par. dir.  
+  // Vector of individual univariate b-spline basis functions, 2. par. dir.  
   std::vector<std::unique_ptr<BSplineUniLR> > bsplinesuni2_;   
 
   BSplineMap bsplines_;   // Map of individual b-spline basis functions.  
@@ -814,12 +985,20 @@ namespace Go
     collect_basis(int from_u, int to_u, 
 		  int from_v, int to_v) const;
 
+  
     void 
       s1773(const double ppoint[],double aepsge, 
 	    double estart[],double eend[],double enext[],
 	    double gpos[], int maxiter,
 	    Element2D* elem, int *jstat) const;
 
+  // Used in grid evaluation of basis values
+  void getBasisValues(double upar, double vpar, Element2D* elem,
+		      std::vector<std::pair<LRBSpline2D*, double> >& bvals) const;
+
+  void getBasisDerivs(double upar, double vpar, Element2D* elem,
+		      std::vector<std::pair<LRBSpline2D*, std::vector<double> > >& bvals) const;
+  
     //DEBUG
     void checkSupport(LRBSpline2D* basis) const;
 

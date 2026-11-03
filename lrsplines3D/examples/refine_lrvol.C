@@ -52,6 +52,7 @@
 #include "GoTools/geometry/ObjectHeader.h"   // For reading the input spline volume
 #include "GoTools/geometry/PointCloud.h"     // For visualization purposes
 #include "GoTools/geometry/LineCloud.h"      // For visualization purposes
+#include "GoTools/lrsplines3D/LRSplinePlotUtils3D.h" // For extracting element boundary information
 
 
 // Use Go namespace for GoTools types
@@ -75,113 +76,113 @@ using std::vector;
 //                                                                           
 //===========================================================================
 
-// Extract information from a current LR spline volume in order to
-// visualize the structure of the parameter domain
-void extractElementMidAndBoundary(shared_ptr<LRSplineVolume> vol,
-				  vector<double>& mid, vector<double>& bd)
-{
-  int num_el = vol->numElements();
-  mid.resize(3*num_el);   // Mid parameters of each element (xmid, ymid, zmid)
-  bd.resize(72*num_el);   // The element corners orginized as corner curves
+// // Extract information from a current LR spline volume in order to
+// // visualize the structure of the parameter domain
+// void extractElementMidAndBoundary(shared_ptr<LRSplineVolume> vol,
+// 				  vector<double>& mid, vector<double>& bd)
+// {
+//   int num_el = vol->numElements();
+//   mid.resize(3*num_el);   // Mid parameters of each element (xmid, ymid, zmid)
+//   bd.resize(72*num_el);   // The element corners orginized as corner curves
   
-  int ki=0, kj=0;
-  Point pos, pos2, dir1, dir2, dir3;
-  for (auto it=vol->elementsBegin(); it != vol->elementsEnd(); ++it)
-    {
-      const Element3D* elem = it->second.get();
-      double umin = elem->umin();
-      double umax = elem->umax();
-      double vmin = elem->vmin();
-      double vmax = elem->vmax();
-      double wmin = elem->wmin();
-      double wmax = elem->wmax();
-      mid[ki++] = 0.5*(umin+umax);
-      mid[ki++] = 0.5*(vmin+vmax);
-      mid[ki++] = 0.5*(wmin+wmax);
+//   int ki=0, kj=0;
+//   Point pos, pos2, dir1, dir2, dir3;
+//   for (auto it=vol->elementsBegin(); it != vol->elementsEnd(); ++it)
+//     {
+//       const Element3D* elem = it->second.get();
+//       double umin = elem->umin();
+//       double umax = elem->umax();
+//       double vmin = elem->vmin();
+//       double vmax = elem->vmax();
+//       double wmin = elem->wmin();
+//       double wmax = elem->wmax();
+//       mid[ki++] = 0.5*(umin+umax);
+//       mid[ki++] = 0.5*(vmin+vmax);
+//       mid[ki++] = 0.5*(wmin+wmax);
 
-      pos = Point(umin, vmin, wmin);
-      dir1 = Point(umax-umin, 0.0, 0.0);
-      dir2 = Point(0.0, vmax-vmin, 0.0);
-      dir3 = Point(0.0, 0.0, wmax-wmin);
+//       pos = Point(umin, vmin, wmin);
+//       dir1 = Point(umax-umin, 0.0, 0.0);
+//       dir2 = Point(0.0, vmax-vmin, 0.0);
+//       dir3 = Point(0.0, 0.0, wmax-wmin);
 
-      pos2 = pos+dir1;
-      for (int ka=0; ka<3; ++ka)
-	bd[kj++] = pos[ka];
-      for (int ka=0; ka<3; ++ka)
-	bd[kj++] = pos2[ka];
+//       pos2 = pos+dir1;
+//       for (int ka=0; ka<3; ++ka)
+// 	bd[kj++] = pos[ka];
+//       for (int ka=0; ka<3; ++ka)
+// 	bd[kj++] = pos2[ka];
 
-      pos2 = pos+dir2;
-      for (int ka=0; ka<3; ++ka)
-	bd[kj++] = pos[ka];
-      for (int ka=0; ka<3; ++ka)
-	bd[kj++] = pos2[ka];
+//       pos2 = pos+dir2;
+//       for (int ka=0; ka<3; ++ka)
+// 	bd[kj++] = pos[ka];
+//       for (int ka=0; ka<3; ++ka)
+// 	bd[kj++] = pos2[ka];
 
-      pos2 = pos+dir3;
-      for (int ka=0; ka<3; ++ka)
-	bd[kj++] = pos[ka];
-      for (int ka=0; ka<3; ++ka)
-	bd[kj++] = pos2[ka];
+//       pos2 = pos+dir3;
+//       for (int ka=0; ka<3; ++ka)
+// 	bd[kj++] = pos[ka];
+//       for (int ka=0; ka<3; ++ka)
+// 	bd[kj++] = pos2[ka];
 
-      pos += dir1;
-      pos2 = pos+dir2;
-      for (int ka=0; ka<3; ++ka)
-	bd[kj++] = pos[ka];
-      for (int ka=0; ka<3; ++ka)
-	bd[kj++] = pos2[ka];
+//       pos += dir1;
+//       pos2 = pos+dir2;
+//       for (int ka=0; ka<3; ++ka)
+// 	bd[kj++] = pos[ka];
+//       for (int ka=0; ka<3; ++ka)
+// 	bd[kj++] = pos2[ka];
 
-      pos2 = pos+dir3;
-      for (int ka=0; ka<3; ++ka)
-	bd[kj++] = pos[ka];
-      for (int ka=0; ka<3; ++ka)
-	bd[kj++] = pos2[ka];
+//       pos2 = pos+dir3;
+//       for (int ka=0; ka<3; ++ka)
+// 	bd[kj++] = pos[ka];
+//       for (int ka=0; ka<3; ++ka)
+// 	bd[kj++] = pos2[ka];
 
-      pos += dir2;
-      pos2 = pos-dir1;
-      for (int ka=0; ka<3; ++ka)
-	bd[kj++] = pos[ka];
-      for (int ka=0; ka<3; ++ka)
-	bd[kj++] = pos2[ka];
+//       pos += dir2;
+//       pos2 = pos-dir1;
+//       for (int ka=0; ka<3; ++ka)
+// 	bd[kj++] = pos[ka];
+//       for (int ka=0; ka<3; ++ka)
+// 	bd[kj++] = pos2[ka];
 
-      pos2 = pos+dir3;
-      for (int ka=0; ka<3; ++ka)
-	bd[kj++] = pos[ka];
-      for (int ka=0; ka<3; ++ka)
-	bd[kj++] = pos2[ka];
+//       pos2 = pos+dir3;
+//       for (int ka=0; ka<3; ++ka)
+// 	bd[kj++] = pos[ka];
+//       for (int ka=0; ka<3; ++ka)
+// 	bd[kj++] = pos2[ka];
 
-      pos += dir3;
-      pos2 = pos-dir1;
-      for (int ka=0; ka<3; ++ka)
-	bd[kj++] = pos[ka];
-      for (int ka=0; ka<3; ++ka)
-	bd[kj++] = pos2[ka];
+//       pos += dir3;
+//       pos2 = pos-dir1;
+//       for (int ka=0; ka<3; ++ka)
+// 	bd[kj++] = pos[ka];
+//       for (int ka=0; ka<3; ++ka)
+// 	bd[kj++] = pos2[ka];
 
-      pos2 = pos-dir2;
-      for (int ka=0; ka<3; ++ka)
-	bd[kj++] = pos[ka];
-      for (int ka=0; ka<3; ++ka)
-	bd[kj++] = pos2[ka];
+//       pos2 = pos-dir2;
+//       for (int ka=0; ka<3; ++ka)
+// 	bd[kj++] = pos[ka];
+//       for (int ka=0; ka<3; ++ka)
+// 	bd[kj++] = pos2[ka];
 
-      pos -= dir1;
-      pos2 = pos-dir2;
-      for (int ka=0; ka<3; ++ka)
-	bd[kj++] = pos[ka];
-      for (int ka=0; ka<3; ++ka)
-	bd[kj++] = pos2[ka];
+//       pos -= dir1;
+//       pos2 = pos-dir2;
+//       for (int ka=0; ka<3; ++ka)
+// 	bd[kj++] = pos[ka];
+//       for (int ka=0; ka<3; ++ka)
+// 	bd[kj++] = pos2[ka];
 
-      pos2 = pos-dir3;
-      for (int ka=0; ka<3; ++ka)
-	bd[kj++] = pos[ka];
-      for (int ka=0; ka<3; ++ka)
-	bd[kj++] = pos2[ka];
+//       pos2 = pos-dir3;
+//       for (int ka=0; ka<3; ++ka)
+// 	bd[kj++] = pos[ka];
+//       for (int ka=0; ka<3; ++ka)
+// 	bd[kj++] = pos2[ka];
 
-      pos -= dir2;
-      pos2 = pos+dir1;
-      for (int ka=0; ka<3; ++ka)
-	bd[kj++] = pos[ka];
-      for (int ka=0; ka<3; ++ka)
-	bd[kj++] = pos2[ka];
-     }
-}
+//       pos -= dir2;
+//       pos2 = pos+dir1;
+//       for (int ka=0; ka<3; ++ka)
+// 	bd[kj++] = pos[ka];
+//       for (int ka=0; ka<3; ++ka)
+// 	bd[kj++] = pos2[ka];
+//      }
+// }
 
 int main(int argc, char *argv[])
 {

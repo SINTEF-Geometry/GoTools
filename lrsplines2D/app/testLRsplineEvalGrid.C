@@ -50,8 +50,6 @@ using namespace Go;
 using std::vector;
 
 
-typedef Element2D simpleElement;
-
 
 int main(int argc, char *argv[])
 {

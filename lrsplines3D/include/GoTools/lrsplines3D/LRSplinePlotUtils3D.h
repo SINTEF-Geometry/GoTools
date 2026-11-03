@@ -54,6 +54,13 @@ namespace Go
     // Write to file, on PostScript-format, the parametric mesh.
     void writePostscriptMesh(Go::LRSplineVolume& lr_spline_vol, std::ostream &out);
 
+  // Extract information from a current LR spline volume in order to
+  // visualize the structure of the parameter domain
+  // mid - Mid parameters of each element (xmid, ymid, zmid) 
+  // bd - The element corners organized as corner curves 
+  void extractElementMidAndBoundary(shared_ptr<LRSplineVolume>& vol,
+				    std::vector<double>& mid,
+				    std::vector<double>& bd);
 }; // End namespace Go
 
 

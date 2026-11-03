@@ -41,10 +41,12 @@
 #include "GoTools/lrsplines2D/LRSurfStitch.h"
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include "GoTools/lrsplines2D/Mesh2DUtils.h"
+#include "GoTools/lrsplines2D/DefineRefs2D.h"
 #include "GoTools/utils/MatrixXD.h"
 #include "GoTools/geometry/BoundedSurface.h"
 #include "GoTools/geometry/GeometryTools.h"
 #include "GoTools/geometry/Utils.h"
+#include "GoTools/geometry/SplineUtils.h"
 #include "GoTools/lrsplines2D/LRSplinePlotUtils.h"
 #include <iostream> // @@ debug
 #include <fstream> // @@ debug
@@ -944,8 +946,8 @@ bool LRSurfStitch::matchSplineSpace(shared_ptr<LRSplineSurface> surf1,
   double upar[4], vpar[4];
   Point corner[4];
   
-  fetchEdgeCorners(surf1, edge1, upar[0], vpar[0], upar[1], vpar[1]);
-  fetchEdgeCorners(surf2, edge2, upar[2], vpar[2], upar[3], vpar[3]);
+  surf1->fetchEdgeCorners(edge1, upar[0], vpar[0], upar[1], vpar[1]);
+  surf2->fetchEdgeCorners(edge2, upar[2], vpar[2], upar[3], vpar[3]);
 
   for (int ki=0; ki<4; ++ki)
     {
@@ -1013,10 +1015,10 @@ bool LRSurfStitch::matchSplineSpace(shared_ptr<LRSplineSurface> surf1,
   for (int ki=0; ki<num_knot_rows; ++ki)
     {
       vector<double> tmp1;
-      extractMissingKnots(union_knots, knots[ki], knot_tol, order, tmp1);
+      SplineUtils::extractMissingKnots(union_knots, knots[ki], knot_tol, order, tmp1);
       all_new_knots1.insert(tmp1.begin(), tmp1.end());
       vector<double> tmp2;
-      extractMissingKnots(union_knots, knots[num_knot_rows+ki], knot_tol, 
+      SplineUtils::extractMissingKnots(union_knots, knots[num_knot_rows+ki], knot_tol, 
 			  order, tmp2);
       all_new_knots2.insert(tmp2.begin(), tmp2.end());
     }
@@ -1029,10 +1031,10 @@ bool LRSurfStitch::matchSplineSpace(shared_ptr<LRSplineSurface> surf1,
 
   // Define end parameters of knot intervals to insert. Set up refinement info
   vector<LRSplineSurface::Refinement2D> refs1;
-  defineRefinements(m1, dir1, edge1, ix1, new_knots1, element_width, refs1);
+  DefineRefs2D::defineRefsAtEdge(m1, dir1, edge1, ix1, new_knots1, element_width, refs1);
 
   vector<LRSplineSurface::Refinement2D> refs2;
-  defineRefinements(m2, dir2, edge2, ix2, new_knots2, element_width, refs2);
+  DefineRefs2D::defineRefsAtEdge(m2, dir2, edge2, ix2, new_knots2, element_width, refs2);
 
   // // To ensure equally sized corresponding B-spline domains along the boundary
   // // curve after refinement, let the element_width knot lines closest to 
@@ -1108,8 +1110,8 @@ bool LRSurfStitch::averageEdge(shared_ptr<LRSplineSurface> surf1, int edge1,
   double upar[4], vpar[4];
   Point corner[4];
   
-  fetchEdgeCorners(surf1, edge1, upar[0], vpar[0], upar[1], vpar[1]);
-  fetchEdgeCorners(surf2, edge2, upar[2], vpar[2], upar[3], vpar[3]);
+  surf1->fetchEdgeCorners(edge1, upar[0], vpar[0], upar[1], vpar[1]);
+  surf2->fetchEdgeCorners(edge2, upar[2], vpar[2], upar[3], vpar[3]);
 
   for (int ki=0; ki<4; ++ki)
     {
@@ -1286,118 +1288,7 @@ void LRSurfStitch::makeLineC1(LRBSpline2D* bsp[4], Direction2D dir)
   bsp[2]->setCoefAndGamma(coefn, 1.0);
 }
 
-//==============================================================================
-void LRSurfStitch::fetchEdgeCorners(shared_ptr<LRSplineSurface> surf, int edge,
-				    double& u1, double& v1, double& u2, double& v2)
-//==============================================================================
-{
-  // Edges are numbered: 0=left, 1=right, 2=lower, 3=upper
-  if (edge <= 1)
-    u1 = u2 = (edge == 0) ? surf->startparam_u() : surf->endparam_u();
-  else
-    {
-      u1 = surf->startparam_u();
-      u2 = surf->endparam_u();
-    }
-  if (edge >= 2)
-    v1 = v2 = (edge == 2) ? surf->startparam_v() : surf->endparam_v();
-  else
-    {
-      v1 = surf->startparam_v();
-      v2 = surf->endparam_v();
-    }
-}
 
-//==============================================================================
-void LRSurfStitch::extractMissingKnots(vector<double>& union_vec, 
-				       vector<double>& vec,
-				       double tol, int order,
-				       vector<double>& resvec)
-//==============================================================================
-{
-  int ki, kj;
-  int size1 = (int)vec.size() - order;
-  int size2 = (int)union_vec.size() - order;
-  for (ki=order, kj=order; ki<size1 || kj<size2; )
-    {
-      if (fabs(vec[ki]-union_vec[kj]) < tol)
-	{
-	  ki++;
-	  kj++;
-	}
-      else if (union_vec[kj] < vec[ki])
-	{
-	  resvec.push_back(union_vec[kj]);
-	  kj++;
-	}
-      else
-	ki++;
-    }
-}
-
-//==============================================================================
-void LRSurfStitch::defineRefinements(const Mesh2D& mesh, Direction2D dir,
-				     int edge, int ix, const vector<double>& knot_vals, 
-				     int element_width,
-				     vector<LRSplineSurface::Refinement2D>& refs)
-//==============================================================================
-{
-  Direction2D curr_dir = flip(dir);
-  for (size_t kj=0; kj<knot_vals.size(); ++kj)
-    {
-      double curr_knot = knot_vals[kj];
-      int other_ix = 
-	Mesh2DUtils::last_nonlarger_knotvalue_ix(mesh, dir, curr_knot);
-
-      double p1 = mesh.kval(curr_dir, ix);
-      double p2;
-      if (edge == 1 || edge == 3)
-      {
-	  int c_ix = ix;
-	  for (int ki=0; ki<element_width; ++ki)
-	  {
-	      int p_ix = c_ix;
-	      c_ix = // We search for the next line which contains curr_knot.
-		  Mesh2DUtils::search_downwards_for_nonzero_multiplicity(mesh, curr_dir,
-									 c_ix-1, other_ix);
-	      // // If segment already exists we must decrease p1.
-	      // int mult = mesh.nu(dir, other_ix, c_ix, p_ix);
-	      // if (mult > 0)
-	      // {
-	      // 	  MESSAGE("Do something!");
-	      // 	  p1 = mesh.kval(curr_dir, c_ix);
-	      // }
-	  }
-	  p2 = mesh.kval(curr_dir, c_ix);
-	}
-      else
-	{
-	  int c_ix = ix;
-	  for (int ki=0; ki<element_width; ++ki)
-	  {
-	      int p_ix = c_ix;
-	      c_ix =
-		  Mesh2DUtils::search_upwards_for_nonzero_multiplicity(mesh, curr_dir,
-								       c_ix+1, other_ix);
-	      // // If segment already exists we must increase p1.
-	      // int mult = mesh.nu(dir, other_ix, p_ix, c_ix);
-	      // if (mult > 0)
-	      // {
-	      // 	  MESSAGE("Do something!");
-	      // 	  p1 = mesh.kval(curr_dir, c_ix);
-	      // }
-	  }
-	  p2 = mesh.kval(curr_dir, c_ix);
-	}
-
-      if (p1 > p2)
-	std::swap(p1, p2);
-
-      LRSplineSurface::Refinement2D curr_ref;
-      curr_ref.setVal(curr_knot, p1, p2, dir, 1);
-      refs.push_back(curr_ref);
-    }
-}
 
 //==============================================================================
 void LRSurfStitch::extractBoundaryBsplines(shared_ptr<LRSplineSurface> surf,

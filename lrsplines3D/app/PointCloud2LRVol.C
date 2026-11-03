@@ -43,6 +43,10 @@
 #include "GoTools/lrsplines3D/LRVolApprox.h"
 #include "GoTools/geometry/ObjectHeader.h"
 #include "GoTools/lrsplines3D/LRSpline3DBezierCoefs.h"
+#include "GoTools/lrsplines3D/DefineRefs3D.h"
+#include "GoTools/lrsplines3D/LRSplinePlotUtils3D.h"
+#include "GoTools/geometry/PointCloud.h"     // For visualization purposes
+#include "GoTools/geometry/LineCloud.h"      // For visualization purposes
 #include <boost/chrono.hpp>
 //#include <chrono>
 #include <boost/timer/timer.hpp>
@@ -52,6 +56,8 @@
 #define BOOST_TIMER_NO_LIB
 #define BOOST_TIMER_SOURCE
 #define BOOST_ALL_NO_LIB
+
+#define DEBUG
 
 using namespace std;
 using namespace Go;
@@ -76,7 +82,12 @@ void print_help_text()
   std::cout << "-info <filename> : Write accuracy information to file \n";
   std::cout << "-initmba <0/1>: 0 = initiate with least squares method \n";
   std::cout << "                1 = apply only multilevel B-spline approximation (MBA) (Default) \n";
+  std::cout << "-proj <0/1/2>: 0 = not projection (default) \n";
+  std::cout << "               1 = projection with least square \n";
+  std::cout << "               2 = projection with radial basis functions (IDW) \n";
   std::cout << "-degree <2/3> : degree of polynomial segments, default = 2\n";
+  std::cout << "-nmb_coef <initial value> : Initial number of coefficients in each parameter direction \n";
+  std::cout << "-distributecf <0/1> : Modify initial number of coefficients according to relative size of parameter domain \n";
   std::cout << "-minsize <length>: Minimum element size (all directions) \n";
   std::cout << "-tolfile: File specifying domains with specific tolerances, global tolerance apply outside domains. PointCloud2LR -tolfile for file format \n";
   std::cout << "-toldoc: Documentation on file format for tolerance domains. \n";
@@ -84,7 +95,21 @@ void print_help_text()
   std::cout << "-feature <ncell1> <ncell2> <ncell3>: Specify 3D grid for feature output  \n";
   std::cout << "-featurelevels <number of levels> <level 1> ... <level n> \n";
   std::cout << "-featuredoc: Show feature documentation \n";
+  std::cout << "-refstrat: Print parameter information to define refinement strategy. \n";
   std::cout << "-h or --help : Write this text\n";
+}
+
+void print_refine_info()
+{
+  std::cout << "Define refinement strategy from command line with the following parameters: \n";
+  std::cout << "-refcat <code>: F = full span, Ml/Mu/Mc = minimum span, S = structured mesh, \n";
+  std::cout << "R = restricted mesh, RL = restricted mesh with element extension. Default = F. \n";
+  std::cout << "-alterdir <code>: B = refine in both parameter directions, A = refine in alternating directions. Default is A. \n";
+  std::cout << "-threshold <code>: no = none, td = with respect to distance, tn = with respect to number. Default is tn. \n";
+  std::cout << "tdk = distance and number for category R and S. Default = no \n";
+  std::cout << "-swapcat <size>: Swap strategy when approximation efficience drops below size. Default = -100 \n";
+  std::cout << "-refcat2 <code>: After swap, as -refcat \n";
+  std::cout << "-threshold2 <code>: After swap, as -threshold \n";
 }
 
 void print_tol_file_format()
@@ -189,6 +214,7 @@ int main (int argc, char *argv[]) {
   double epsge;
   int levels;
   int initMBA = 1;
+  int projection = 0;
   int del = 4;
   int degree = 2;
   int verbose = 0;
@@ -197,6 +223,12 @@ int main (int argc, char *argv[]) {
   int ncell1=0, ncell2=0, ncell3=0;
   bool features = false;
   vector<int> feature_levels;
+  
+  int initncoef = 6;
+  int distribute_ncoef = 1;
+
+  RefineStrategy3D refcat=fullSpan;
+  int threshold=2, alter=1;
 
   int ki, kj;
   vector<bool> par_read(argc-1, false);
@@ -244,6 +276,13 @@ int main (int argc, char *argv[]) {
 	  if (stat < 0)
 	    return 1;
 	}
+      else if (arg == "-proj")
+	{
+	  int stat = fetchIntParameter(argc, argv, ki, projection, 
+				       nmb_par, par_read);
+	  if (stat < 0)
+	    return 1;
+	}
       else if (arg == "-degree")
 	{
 	  int stat = fetchIntParameter(argc, argv, ki, degree, 
@@ -251,7 +290,21 @@ int main (int argc, char *argv[]) {
 	  if (stat < 0)
 	    return 1;
 	}
-      else if (arg == "-minsize")
+      else if (arg == "-nmb_coef")
+	{
+	  int stat = fetchIntParameter(argc, argv, ki, initncoef, 
+				       nmb_par, par_read);
+	  if (stat < 0)
+	    return 1;
+	}
+      else if (arg == "-distributecf")
+	{
+	  int stat = fetchIntParameter(argc, argv, ki, distribute_ncoef, 
+				       nmb_par, par_read);
+	  if (stat < 0)
+	    return 1;
+	}
+       else if (arg == "-minsize")
 	{
 	  int stat = fetchDoubleParameter(argc, argv, ki, minsize, 
 					  nmb_par, par_read);
@@ -312,7 +365,61 @@ int main (int argc, char *argv[]) {
 	  print_feature_info();
 	  exit(0);
 	}
-    }
+      else if (arg == "-refstrat")
+	{
+	  print_refine_info();
+	  exit(0);
+	}
+     else if (arg == "-refcat")
+	{
+	  char* cat0;
+	  int stat = fetchCharParameter(argc, argv, ki, cat0, 
+				       nmb_par, par_read);
+	  if (stat < 0)
+	    return 1;
+
+	  string cat(cat0);
+	  if (cat == "F")
+	    refcat = fullSpan;
+	  else if (cat == "Ml")
+	    refcat = minSpanSize;
+	  else if (cat == "Mu")
+	    refcat = minSpanError;
+	  else if (cat == "Mc")
+	    refcat = minSpanCombined;
+	  else if (cat == "S")
+	    refcat = structuredMesh;
+	  else if (cat == "R")
+	    refcat = restrictedMesh;
+	}
+      else if (arg == "-threshold")
+	{
+	  char* thresh0;
+	  int stat = fetchCharParameter(argc, argv, ki, thresh0, 
+				       nmb_par, par_read);
+	  if (stat < 0)
+	    return 1;
+
+	  string thresh(thresh0);
+	  if (thresh == "no")
+	    threshold = 0;
+	  else if (thresh == "td")
+	    threshold = 1;
+	  else if (thresh == "tn")
+	    threshold = (refcat == restrictedMesh ) ? 3 : 2;
+	  else if (thresh == "tdk")
+	    threshold = 4;
+	}
+      else if (arg == "-alterdir")
+	{
+	  char *altdir;
+	  int stat = fetchCharParameter(argc, argv, ki, altdir, 
+				       nmb_par, par_read);
+	  if (stat < 0)
+	    return 1;
+	  alter = (altdir[0] == 'A') ? 1 : 0;
+	}
+       }
 
   // Read remaining parameters
   if (nmb_par != 4)
@@ -448,8 +555,8 @@ int main (int argc, char *argv[]) {
   std::cout << "," << domain[3] << "]x[" << domain[4] << "," << domain[5] << "]" << std::endl;
   std::cout << "Range: [" << minval << "," << maxval << "]" << std::endl;
   int dim = 1;
-  int ncoef = 6; //6; //8; //6
   int order = degree + 1;
+  int ncoef = std::max(order, initncoef); //6; //8; //6
   int nm = ncoef*ncoef*ncoef;
   double dom = (domain[1]-domain[0])*(domain[3]-domain[2])*(domain[5]-domain[4]);
   double c1 = std::pow((double)nm/dom, 1.0/3.0);
@@ -465,36 +572,48 @@ int main (int argc, char *argv[]) {
   //std::cout << "Number of coefficients: " << nc[0] << ", " << nc[1] << ", " << nc[2] << std::endl;
   // LRVolApprox vol_approx(nc[0], order, nc[1], order, nc[2], order,
   // 			 pc4d, dim, domain, epsge, mba_level);
-  std::cout << "Number of coefficients: " << ncoef << ", " << ncoef << ", " << ncoef << std::endl;
-  LRVolApprox vol_approx(ncoef, order, ncoef, order, ncoef, order,
-  			 pc4d, dim, domain, epsge, mba_level);
-  vol_approx.setInitMBA(initMBA);
-  if (tolerances.size() > 0)
-    vol_approx.setVarTolBox(tolerances);
-  if (minsize > 0.0)
-    vol_approx.setMinimumElementSize(minsize, minsize, minsize);
-  if (outfrac > 0.0)
-    vol_approx.setOutFraction(outfrac);
-  if (verbose)
-    vol_approx.setVerbose(true);
+  //std::cout << "Number of coefficients: " << ncoef << ", " << ncoef << ", " << ncoef << std::endl;
+  shared_ptr<LRVolApprox> vol_approx;
+  if (distribute_ncoef)
+    vol_approx =
+      shared_ptr<LRVolApprox>(new LRVolApprox(nc[0], order, nc[1], order, nc[2],
+					      order, pc4d, dim, domain, epsge,
+					      mba_level, projection));
   else
-    vol_approx.setVerbose(false);
+    vol_approx =
+      shared_ptr<LRVolApprox>(new LRVolApprox(ncoef, order, ncoef, order, ncoef,
+					      order,pc4d, dim, domain, epsge,
+					      mba_level, projection));
+  vol_approx->setInitMBA(initMBA);
+  if (tolerances.size() > 0)
+    vol_approx->setVarTolBox(tolerances);
+  if (minsize > 0.0)
+    vol_approx->setMinimumElementSize(minsize, minsize, minsize);
+  if (outfrac > 0.0)
+    vol_approx->setOutFraction(outfrac);
+  if (verbose)
+    vol_approx->setVerbose(true);
+  else
+    vol_approx->setVerbose(false);
 
   // Feature output
   if (features)
     {
-      vol_approx.setFeatureOut(ncell1, ncell2, ncell3);
-      vol_approx.setFeatureLevel(feature_levels);
+      vol_approx->setFeatureOut(ncell1, ncell2, ncell3);
+      vol_approx->setFeatureLevel(feature_levels);
     }
 
+  // Refine strategy
+  vol_approx->setRefinementStrategy(refcat, alter, threshold);
+  
   double max, average, av_all;
   double maxout, avout;
   int num_out;
   cout << "Starting approximation..." << endl;
 
-  shared_ptr<LRSplineVolume> result = vol_approx.getApproxVol(max,av_all,average,num_out,levels);
+  shared_ptr<LRSplineVolume> result = vol_approx->getApproxVol(max,av_all,average,num_out,levels);
 
-  vol_approx.fetchOutsideTolInfo(maxout, avout);
+  vol_approx->fetchOutsideTolInfo(maxout, avout);
 
   auto nanoseconds = boost::chrono::nanoseconds(t.elapsed().user + t.elapsed().system);
   duration = duration = 1.0e-09*nanoseconds.count();//t.elapsed();
@@ -533,10 +652,10 @@ int main (int argc, char *argv[]) {
   result->writeStandardHeader(ofs);
   result->write(ofs);
   
-  // LRSpline3DBezierCoefs bez(*result);
+  LRSpline3DBezierCoefs bez(*result);
 
-  // bez.getBezierCoefs();
-  // bez.writeToFile("outbez.bb");
+  bez.getBezierCoefs();
+  bez.writeToFile("outbez.bb");
 
   if (field_out)
     {
@@ -570,5 +689,22 @@ int main (int argc, char *argv[]) {
 	  field_info << std::endl;
 	}
     }
+  
+#ifdef DEBUG
+  std::ofstream ofm("vol_mesh.g2");
+  vector<double> mid1, bd1;
+  extractElementMidAndBoundary(result, mid1, bd1);
+  
+  // Make point cloud from mid parameters
+  PointCloud3D elem_cloud1(mid1.begin(), mid1.size()/3);
 
+  elem_cloud1.writeStandardHeader(ofm);
+  elem_cloud1.write(ofm);
+
+  // Make line cloud from element boundaries
+  LineCloud elem_lines1(bd1.begin(), bd1.size()/6);
+  elem_lines1.writeStandardHeader(ofm);
+  elem_lines1.write(ofm);
+
+#endif
 }

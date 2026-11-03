@@ -124,6 +124,11 @@ int main(int argc, char *argv[])
   // regarded as identical
   shared_ptr<LRSplineSurface> lr_surf(new LRSplineSurface(spline_init.get(),
 							  1.0e-6));
+  std::cout << "Initiell surface" << std::endl;
+  for (auto bsp=lr_surf->basisFunctionsBegin();
+       bsp!=lr_surf->basisFunctionsEnd(); ++ bsp)
+    std::cout << bsp->second->getNestLevel() << std::endl;
+  
   std::ofstream of2(outfile2.c_str());
   lr_surf->writeStandardHeader(of2);
   lr_surf->write(of2);
@@ -146,6 +151,11 @@ int main(int argc, char *argv[])
   // Perform knot insertion, one knot line segment at the time
   lr_surf->refine(dir, par_y1, start_y, end_y, mult, absolute);
 
+  std::cout << "First refined surface" << std::endl;
+  for (auto bsp=lr_surf->basisFunctionsBegin();
+       bsp!=lr_surf->basisFunctionsEnd(); ++ bsp)
+    std::cout << bsp->second->getNestLevel() << std::endl;
+  
   // Collect knot insertion information in a structure. This call has the
   // same effect as the previous
   LRSplineSurface::Refinement2D ref_y2;
@@ -166,6 +176,11 @@ int main(int argc, char *argv[])
   double end_x = 1.5;
   lr_surf->refine(dir, par_x1, start_x, end_x, mult, absolute);
   lr_surf->refine(dir, par_x2, start_x, end_x, mult, absolute);
+  
+  std::cout << "Second refined surface" << std::endl;
+  for (auto bsp=lr_surf->basisFunctionsBegin();
+       bsp!=lr_surf->basisFunctionsEnd(); ++ bsp)
+    std::cout << bsp->second->getNestLevel() << std::endl;
   
   std::ofstream of4(outfile4.c_str());
   lr_surf->writeStandardHeader(of4);

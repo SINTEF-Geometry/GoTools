@@ -44,6 +44,7 @@
 #include "GoTools/geometry/ParamSurface.h"
 #include "GoTools/geometry/BsplineBasis.h"
 #include "GoTools/geometry/RectDomain.h"
+#include "GoTools/geometry/BasisGridResult.h"
 #include "GoTools/utils/ScratchVect.h"
 #include "GoTools/utils/config.h"
 
@@ -55,6 +56,7 @@ class SplineCurve;
 class DirectionCone;
 class ElementarySurface;
 
+  /*
 /// Structure for storage of results of grid evaluation of the basis function of a spline surface.
 /// Positional evaluation information in one parameter value
 struct BasisPtsSf
@@ -232,7 +234,8 @@ struct BasisDerivsSfU
       values[i].resize(2*derivs+1);
   }
 };
-
+  */
+  
 /// \brief SplineSurface provides methodes for storing,
 /// reading and manipulating rational and non-rational
 /// B-spline surfaces.

@@ -108,10 +108,28 @@ int main( int argc, char* argv[] )
     dynamic_pointer_cast<LRSplineSurface, ParamSurface>(sf);
   if (lrsf.get())
     {
+      int num = 10;
       std::ofstream ofel("sf_elements.g2");
-      LineCloud lines = lrsf->getElementBds();
+      LineCloud lines = lrsf->getElementBds(num);
       lines.writeStandardHeader(ofel);
       lines.write(ofel);
+
+      std::ofstream ofc("sf_coefs.g2");
+      ofc << "400 1 0 4 100 0 155 255" << std::endl;
+      ofc << lrsf->numBasisFunctions() << std::endl;
+      LRSplineSurface::BSplineMap::const_iterator it1 = 
+	lrsf->basisFunctionsBegin();
+      for (; it1 != lrsf->basisFunctionsEnd(); ++it1)
+	{
+	  Point coef = it1->second->Coef();
+	  if (lrsf->dimension() == 1)
+	    {
+	      Point greville = it1->second->getGrevilleParameter();
+	      ofc << greville << " " << coef << std::endl;
+	    }
+	  else
+	    ofc << coef << std::endl;
+	}
     }
 
   if (bdsf.get())

@@ -56,6 +56,7 @@
 
 using std::vector;
 using std::pair;
+using std::tuple;
 using std::find_if;
 using std::max_element;
 using std::min_element;
@@ -524,6 +525,33 @@ int Mesh2D::removeUnusedLines(Direction2D d)
 }
 
 // =============================================================================
+vector<tuple<int, int, int> > Mesh2D::segments_mult(Direction2D d, int ix) const
+// =============================================================================
+{
+  int threshold = 1;
+  const auto& mvec = select_meshvec_(d, ix);
+  vector<tuple<int, int, int> > result;
+  const int BLANK = -1; // use this flag to indicate uninitialized value
+  int start = BLANK;
+  int mult = 0;
+  for (auto i = mvec.begin(); i != mvec.end(); ++i)
+    if (i->mult >= threshold && start == BLANK)
+      {
+	start = i->ix;
+	mult = i->mult;
+      }
+    else if (i->mult < threshold && start != BLANK) {
+      result.emplace_back(tuple<int, int, int>(start, i->ix, mult));
+      start = (i->mult >= threshold) ? i->ix : BLANK;
+    }
+
+  if (start != BLANK) 
+    result.emplace_back(tuple<int, int, int>(start, numDistinctKnots(flip(d)) - 1, mult));
+
+  return result;
+}
+
+// =============================================================================
 vector<pair<int, int> > Mesh2D::segments(Direction2D d, int ix, int threshold) const
 // =============================================================================
 {
@@ -535,7 +563,7 @@ vector<pair<int, int> > Mesh2D::segments(Direction2D d, int ix, int threshold) c
     if (i->mult >= threshold && start == BLANK) start = i->ix;
     else if (i->mult < threshold && start != BLANK) {
       result.emplace_back(pair<int, int>(start, i->ix));
-      start = BLANK;
+      start = (i->mult >= threshold) ? i->ix : BLANK;
     }
 
   if (start != BLANK) 
@@ -607,6 +635,30 @@ int Mesh2D::minMultInLine(Direction2D d, int ix) const
 }
 
 // =============================================================================
+double Mesh2D::maxKnotInterval(Direction2D d) const
+// =============================================================================
+{
+  double knotint = 0.0;
+  const double *st = (d == XFIXED) ? &knotvals_x_[0] : &knotvals_y_[0];
+  int nmb = (d == XFIXED) ? (int)knotvals_x_.size() : (int)knotvals_y_.size();
+  for (int ka=1; ka<nmb; ++ka)
+    knotint = std::max(knotint, st[ka]-st[ka-1]);
+  return knotint;
+}
+
+// =============================================================================
+double Mesh2D::minKnotInterval(Direction2D d) const
+// =============================================================================
+{
+  const double *st = (d == XFIXED) ? &knotvals_x_[0] : &knotvals_y_[0];
+  int nmb = (d == XFIXED) ? (int)knotvals_x_.size() : (int)knotvals_y_.size();
+  double knotint = st[nmb-1] - st[0];
+  for (int ka=1; ka<nmb; ++ka)
+    knotint = std::min(knotint, st[ka]-st[ka-1]);
+  return knotint;
+}
+
+// =============================================================================
   int Mesh2D::knotIntervalFuzzy(Direction2D d, double& par, double eps) const
 // =============================================================================
 {
@@ -625,6 +677,19 @@ int Mesh2D::minMultInLine(Direction2D d, int ix) const
   return ix;
 }
 
+// =============================================================================
+  double Mesh2D::closestKnotval(Direction2D d, double par) const
+// =============================================================================
+{
+  int ix = Mesh2DUtils::last_nonlarger_knotvalue_ix(*this, d, par);
+  const double *st = (d == XFIXED) ? &knotvals_x_[0] : &knotvals_y_[0];
+  int nmb = (d == XFIXED) ? (int)knotvals_x_.size() : (int)knotvals_y_.size();
+  if (ix == nmb-1)
+    return st[ix];
+  else
+    return (st[ix+1]-par < par-st[ix]) ? st[ix+1] : st[ix];
+}
+  
 // =============================================================================
   int Mesh2D::getKnotIdx(Direction2D d, double& par, double eps) const
 // =============================================================================
