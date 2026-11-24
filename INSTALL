@@ -145,7 +145,7 @@ OpenGL:
   used by the application.
 
 CMake:
-- In order to run the testst you should add $CMAKE_DIR/bin to the PATH, allowing ctest.exe to be
+- In order to run the tests you should add $CMAKE_DIR/bin to the PATH, allowing ctest.exe to be
   found.
 - On Windows 10 the HOME variable is not set. This is needed by the cmake setup. Add HOME to the
   user environment variables, pointing to the home directory (typically 'C:\Users\<username>').
