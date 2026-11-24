@@ -33,7 +33,8 @@ else()
       set(QTDIR "" CACHE PATH "Path to Qt (e.g. C:/Qt/Qt5.6.2/5.6/msvc2015_64/)")
       message(SEND_ERROR "QTDIR variable is missing but required. Set to QT install dir with the required lib dir.")
     endif()
-    set(CMAKE_PREFIX_PATH "$ENV{QTDIR}")
+    # Prepend, do not overwrite: the vcpkg toolchain also uses CMAKE_PREFIX_PATH.
+    list(PREPEND CMAKE_PREFIX_PATH "$ENV{QTDIR}")
   endif()
   find_package(Qt5 REQUIRED COMPONENTS Core Widgets Gui OpenGL)
   

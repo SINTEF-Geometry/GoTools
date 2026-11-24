@@ -1,0 +1,19 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "name": "gotools",
+  "description": "Third party libraries for building GoTools on Windows. Qt is installed separately (see INSTALL).",
+  "dependencies": [
+    "boost-chrono",
+    "boost-math",
+    "boost-smart-ptr",
+    "boost-static-assert",
+    "boost-test",
+    "boost-timer",
+    "boost-tokenizer",
+    "boost-type-traits",
+    "freeglut",
+    "jsoncpp",
+    "pugixml",
+    "spdlog"
+  ]
+}
