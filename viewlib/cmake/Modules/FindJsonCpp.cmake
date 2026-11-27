@@ -8,6 +8,18 @@
 #  JSONCPP_LIBRARIES
 #
 
+# On Windows, prefer jsoncpp's own CMake package (vcpkg, modern installs). Its
+# imported target selects the debug or release library per configuration.
+if(WIN32)
+  find_package(jsoncpp CONFIG QUIET)
+  if(TARGET JsonCpp::JsonCpp)
+    set(JSONCPP_INCLUDE_DIR "")  # Include dirs come with the target.
+    set(JSONCPP_LIBRARIES JsonCpp::JsonCpp)
+    set(JSONCPP_FOUND TRUE)
+    return()
+  endif()
+endif()
+
 find_path(JSONCPP_INCLUDE_DIR "json/json.h"
 #  PATHS "~/Install/jsoncpp/include"
   PATHS "~/Install/include"

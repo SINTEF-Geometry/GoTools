@@ -51,8 +51,17 @@ SET(DEPLIBS
 # endif()
 
 if (GoTools_ENABLE_LOGGER)
-  find_package(spdlog REQUIRED)
-  INCLUDE_DIRECTORIES(${spdlog_INCLUDE_DIR})  # Include spdlog directories
+  if(WIN32)
+    # Prefer spdlog's own CMake package (vcpkg, modern installs). The spdlog::spdlog
+    # target brings in fmt, the required defines and /utf-8.
+    find_package(spdlog CONFIG QUIET)
+  endif()
+  if(TARGET spdlog::spdlog)
+    SET(DEPLIBS ${DEPLIBS} spdlog::spdlog)
+  else()
+    find_package(spdlog REQUIRED)  # cmake/Modules/Findspdlog.cmake
+    INCLUDE_DIRECTORIES(${spdlog_INCLUDE_DIR})  # Include spdlog directories
+  endif()
   IF(CMAKE_COMPILER_IS_GNUCXX)
     SET(DEPLIBS ${DEPLIBS} ${SPDLOG_LIBRARIES} fmt)
   ENDIF()

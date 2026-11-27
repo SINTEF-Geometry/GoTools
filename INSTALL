@@ -94,18 +94,36 @@ How to edit environment variables:
 - Search for env, select: "Edit the system environment variables" (or "Edit environment variables
   for your account" to add them to your user only).
 
-Boost:
-- Download a binary release for your Visual Studio version.
-- To help CMake find the boost install folder the BOOST_ROOT variable must be added to the system
-  environment variables. This refers to the top level Boost folder (for instance 'C:\boost_1_74_0'),
-  which contains both the 'boost' directory with the header files, as well as the folder with the
-  Visual Studio binary libraries (like 'lib64-msvc-14.2').
-- If you have multiple Visual Studio versions installed then all the corresponding binary library
-  directories from the same Boost version should recide in the same BOOST_ROOT folder. CMake will
-  pick the correct binaries.
+Thirdparty libraries (vcpkg):
+- The thirdparty libraries (Boost, PugiXML, JsonCpp, FreeGLUT and spdlog), except Qt, are installed
+  by vcpkg (https://vcpkg.io), as listed in the file vcpkg.json. This happens automatically when
+  CMake configures the project. The library versions are not pinned: they follow your vcpkg
+  installation, in the same way as the apt packages follow the distribution release on Linux.
+- Install vcpkg by cloning the repository and bootstrapping it:
+  $ git clone https://github.com/microsoft/vcpkg.git C:/vcpkg
+  $ C:/vcpkg/bootstrap-vcpkg.bat
+- Add the variable VCPKG_ROOT to the system environment variables, pointing to the vcpkg folder
+  (C:\vcpkg). CMake uses it to find vcpkg.
+- Do not set the BOOST_ROOT environment variable. Boost comes from vcpkg, and CMake ignores
+  BOOST_ROOT when vcpkg is used.
+- The first configure installs the libraries into the vcpkg_installed folder of the build folder.
+  If a library has not been built before, this can take a long time (mainly Boost). vcpkg keeps the
+  built libraries in a binary cache (%LOCALAPPDATA%\vcpkg\archives), so later configures are fast.
+- The vcpkg triplet follows the Visual Studio toolset: x64-windows-static-md for the native
+  compiler, and x64-windows-static-md-v142 when configuring with "-T v142" (defined in
+  cmake/vcpkg-triplets). It may be overridden with -DVCPKG_TARGET_TRIPLET=<triplet>. Use a new
+  build folder when changing the toolset or the triplet.
+- To update the libraries, update vcpkg ("git -C C:/vcpkg pull", then run
+  "C:/vcpkg/bootstrap-vcpkg.bat" to update the vcpkg tool). The next configure installs the new
+  versions. Then rebuild and run the tests.
+- The old setup without vcpkg is described in the section "Windows legacy setup (without vcpkg)"
+  below.
 
 Qt:
 - Download a binary release for your Visual Studio version.
+  - Or install using aqt:
+    $ pip install aqtinstall
+    $ aqt install-qt windows desktop 5.15.2 win64_msvc2019_64 -O /c/Qt
 - To help CMake find the Qt install folder the QTDIR variable must be added to the system
   environment variables. This variable should point to the binary library directory, for instance
   'C:\Qt\5.15.2\msvc2019_64'.
@@ -117,56 +135,31 @@ Qt:
   '${QTDIR}\plugins\platforms'. Starting from a clean build the build process must be run twice in
   order to create the necessary Qt files.
 
-PugiXML & JsonCpp:
-- Both these libraries must be built from source (using cmake and Visual Studio). Fetch the source
-  files from:
-  - PugiXML: pugixml.org
-  - JsonCpp: github.com/open-source-parsers/jsoncpp
-- Make sure that the cmake generator uses the correct version of Visual Studio and that the platform
-  is set to x64.
-- The include files and the built libraries may be set manually in CMake. A smoother approach is to
-  adopt the convention that the include files are placed in the '~/Install/include/pugi' folder
-  (replace with json for the json include files), while the library files are placed in the
-  '~/Install/msvc2019_lib64/Release' folder (use Debug for the debug version of the libraries,
-  change to msvc2015 for Visual Studio 2015).
-
 OpenGL:
-- If cmake does not find the gl.h and glu.h files they may be copied to the '~/Install/include/GL'
-  folder. If you are using Visual Studio and selected the C++ workload option in the installer then
-  the files should be located in a subfolder of "C:/Program Files (x86)/Windows Kits".
+- If you are using Visual Studio and selected the C++ workload option in the installer then the
+  gl.h and glu.h files are located in a subfolder of "C:/Program Files (x86)/Windows Kits".
 
 - For computers without working OpenGL drivers (typically the case for virtual machines) MESA may be
   used (software rendering). In the folder with the application there is a library named
   'opengl32sw.dll'. This library should be copied and renamed to 'opengl32.dll', which will then be
   used by the application.
 
-FreeGLUT:
-- Compilation of the sisl viewer requires freeglut. Compilation of the app is off by default.
-- Freeglut may be downloaded and built using Visual Studio:
-  https://github.com/FreeGLUTProject/freeglut
-- The include and library files should be placed in locations in the same manner as for PugiXML &
-  JsonCpp.
-
-spdlog:
-- Enabling logging requires spdlog. Off by default. When disabled all the log messages are written
-  to cerr.
-- spdlog may be downloaded and built using Visual Studio:
-  https://github.com/gabime/spdlog
-- The include and library files should be placed in locations in the same manner as for PugiXML &
-  JsonCpp.
-
 CMake:
-- In order to run the testst you should add $CMAKE_DIR/bin to the PATH, allowing ctest.exe to be
+- In order to run the tests you should add $CMAKE_DIR/bin to the PATH, allowing ctest.exe to be
   found.
 - On Windows 10 the HOME variable is not set. This is needed by the cmake setup. Add HOME to the
   user environment variables, pointing to the home directory (typically 'C:\Users\<username>').
 - For 64 bit applications using Visual Studio 2015 you should make sure to choose x64 when
   generating the solution using cmake-gui (default is x86).
-- Optionally you may run cmake from the command line, in this example using Visual Studio 2019 on
-  an Intel/AMD 64-bit system:
-  $ mkdir build_msvc2019
-  $ cd build_msvc2019
-  $ cmake ../ -G "Visual Studio 16 2019" -A x64
+- Optionally you may run cmake from the command line, in this example using Visual Studio 2026 with
+  its native compiler, on an Intel/AMD 64-bit system:
+  $ mkdir build_msvc2026
+  $ cd build_msvc2026
+  $ cmake ../ -G "Visual Studio 18 2026" -A x64
+- To build with the Visual Studio 2019 compiler (toolset v142) add "-T v142". This requires the
+  individual component "MSVC v142 - VS 2019 C++ x64/x86 build tools" in the Visual Studio
+  installer:
+  $ cmake ../ -G "Visual Studio 18 2026" -A x64 -T v142
 
 Build the project in Release mode from the build folder (replace with 'Debug' for building in debug
 mode):
@@ -189,6 +182,54 @@ Running the tests from a shell (like Git Bash):
 - Run only the acceptance tests (use unit or integration for the other test types, using a unique
   substring like 'cep' will also work):
   $ ctest -L acceptance
+
+Windows legacy setup (without vcpkg)
+************************************
+
+This is the old setup, where the thirdparty libraries are installed manually. To use it, do not set
+the VCPKG_ROOT environment variable (and do not pass a vcpkg toolchain file to CMake). CMake then
+searches for the libraries in the locations described here.
+
+Boost:
+- Download a binary release for your Visual Studio version.
+- To help CMake find the boost install folder the BOOST_ROOT variable must be added to the system
+  environment variables. This refers to the top level Boost folder (for instance 'C:\boost_1_74_0'),
+  which contains both the 'boost' directory with the header files, as well as the folder with the
+  Visual Studio binary libraries (like 'lib64-msvc-14.2').
+- If you have multiple Visual Studio versions installed then all the corresponding binary library
+  directories from the same Boost version should recide in the same BOOST_ROOT folder. CMake will
+  pick the correct binaries.
+
+PugiXML & JsonCpp:
+- Build manually from source (using cmake and Visual Studio). Fetch the source files from:
+  - PugiXML: pugixml.org
+  - JsonCpp: github.com/open-source-parsers/jsoncpp
+- Make sure that the cmake generator uses the correct version of Visual Studio and that the platform
+  is set to x64.
+- The include files and the built libraries may be set manually in CMake. A smoother approach is to
+  adopt the convention that the include files are placed in the '~/Install/include/pugi' folder
+  (replace with json for the json include files), while the library files are placed in the
+  '~/Install/msvc2019_lib64/Release' folder (use Debug for the debug version of the libraries,
+  change to msvc2015 for Visual Studio 2015).
+
+OpenGL:
+- If cmake does not find the gl.h and glu.h files they may be copied to the '~/Install/include/GL'
+  folder.
+
+FreeGLUT:
+- Compilation of the sisl viewer requires freeglut. Compilation of the app is off by default.
+- Freeglut may be downloaded and built using Visual Studio:
+  https://github.com/FreeGLUTProject/freeglut
+- The include and library files should be placed in locations in the same manner as for PugiXML &
+  JsonCpp.
+
+spdlog:
+- Enabling logging (GoTools_ENABLE_LOGGER) requires spdlog. When disabled all the log messages are
+  written to cerr.
+- spdlog may be downloaded and built using Visual Studio:
+  https://github.com/gabime/spdlog
+- The include and library files should be placed in locations in the same manner as for PugiXML &
+  JsonCpp.
 
 
 MacOS

@@ -6,6 +6,18 @@
 # PUGIXML_LIBRARIES - library to link against
 # PUGIXML_FOUND - true if pugixml was found.
 
+# On Windows, prefer pugixml's own CMake package (vcpkg, modern installs). Its
+# imported target selects the debug or release library per configuration.
+if(WIN32)
+  find_package(pugixml CONFIG QUIET)
+  if(TARGET pugixml::pugixml)
+    set(PUGIXML_INCLUDE_DIR "")  # Include dirs come with the target.
+    set(PUGIXML_LIBRARIES pugixml::pugixml)
+    set(PUGIXML_FOUND "YES")
+    return()
+  endif()
+endif()
+
 #Find pugixml header
 find_path(PUGIXML_INCLUDE_DIR
   NAMES pugixml.hpp
