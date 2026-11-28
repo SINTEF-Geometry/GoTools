@@ -76,7 +76,7 @@ class LRBSpline2D : public Streamable
     { }; 
 
   /// Constructor
-  /// \param c_g coefficient
+  /// \param c_g coefficient multiplied with the scaling factor. The rational weight is not expected to be multiplied with the coefficient
   /// \param weight rational weight (1 if non-rational surface)
   /// \param bspline_u univariate B-spline in first parameter direction
   /// \param bspline_v univariate B-spline in second parameter direction
@@ -93,8 +93,10 @@ class LRBSpline2D : public Streamable
       gamma_(gamma),
       bspline_u_(bspline_u),
       bspline_v_(bspline_v),
+      nest_level_(-1),
       coef_fixed_(0),
-      overload_(false)
+      overload_(false),
+      visited_(false)
     {
       bspline_u_->incrCount();
       bspline_v_->incrCount();
@@ -114,6 +116,7 @@ class LRBSpline2D : public Streamable
     std::swap(bspline_v_, rhs.bspline_v_);
     std::swap(coef_fixed_,rhs.coef_fixed_);
     std::swap(overload_,rhs.overload_);
+    std::swap(visited_,rhs.visited_);
   }
 
   /// Destructor
@@ -166,18 +169,18 @@ class LRBSpline2D : public Streamable
   /// the domain. The basis function itself has no knowledge of the
   /// underlying mesh, so this information has to be given explicitly
   /// using the 'u_at_end' and 'v_at_end' parameters.
-  // @@@ VSK. I am not sure if I like the way of distributing position and
-  // derivatives, but it is not top level. What about mixed derivatives?
-  // What about rationals? Should maybe look at SplineSurface for interface.
+  /// Note that the the B-spline stores the rational parameter, but is not
+  /// responsible for involving it in computations. To compute the value
+  /// of the B-spline times the coefficient in the rational case call
+  /// evalBasisFunction and fetch the weight and the coefficient. See also
+  /// point() and operator() in LRSplineSurface.
   Point eval(double u, double v, 
 	     int u_deriv = 0, int v_deriv = 0,
 	     bool u_at_end = false, bool v_at_end = false) const
   { 
     if (rational_)
       {
-	//MESSAGE("Rational case under construction!");
-	if (u_deriv > 0 || v_deriv > 0)
-	  MESSAGE("Rational case with derivs not yet supported!");
+	MESSAGE("Rational case not expected!");
       }
 
 
@@ -191,6 +194,7 @@ class LRBSpline2D : public Streamable
 
   /// Evaluate position only, array of correct size is expected as
   /// input. No size checking
+  /// See eval() for rationals
   void evalpos(double u, double v, double pos[])
   {
     double bb = evalBasisFunc(u, v);
@@ -206,6 +210,8 @@ class LRBSpline2D : public Streamable
   /// \param deriv number of derivative to evaluate (0 = only position)
   /// \param der array of length (deriv+1)*(deriv+2)/2 for accumulated storage of
   /// derivatives. Sequence: p, du, dv, duu, duv, dvv, ...
+  /// Note that for rational the output points are in homogenous space, i.e.
+  /// the dimension is eqal to dim+1
  void evalder_add(double u, double v, 
 		  int deriv,
 		  Point der[],
@@ -271,6 +277,10 @@ class LRBSpline2D : public Streamable
   std::vector<int>& kvec(Direction2D d)      
     {return (d==XFIXED) ? bspline_u_->kvec() : bspline_v_->kvec();}
 
+  /// Knot vector values in the first (XFIXED) or second (YFIXED)
+  /// parameter direction
+  std::vector<double> kvec_val(Direction2D d) const;
+  
   /// Get the polynomial degree of the spline.
   const int degree(Direction2D d) const 
   {return (int)kvec(d).size() - 2;}  
@@ -300,6 +310,16 @@ class LRBSpline2D : public Streamable
     return bspline_v_->max();
   }
 
+  double pmin(Direction2D d)
+  {
+    return (d == XFIXED) ? bspline_u_->min() : bspline_v_->min();
+  }
+  
+  double pmax(Direction2D d)
+  {
+    return (d == XFIXED) ? bspline_u_->max() : bspline_v_->max();
+  }
+  
   double knotval(Direction2D d, int kn) const
   {
     return (d == XFIXED) ? bspline_u_->knotval(kn) : bspline_v_->knotval(kn);
@@ -332,6 +352,18 @@ class LRBSpline2D : public Streamable
       bspline_u_->coversPar(u_ix) && bspline_v_->coversPar(v_ix);
   }
 
+  int isInDomain(const Point& par, double eps)
+  {
+    if (par[0] < umin()+eps && par[0] < umax()-eps &&
+	par[1] > vmin()+eps && par[1] < vmax()-eps)
+      return 1;
+    else if (par[0] > umax()+eps || par[0] < umin()-eps ||
+	     par[1] > vmax()+eps || par[1] < vmin()-eps)
+      return 0;
+    else
+      return 2;
+  }
+    
   /// Return greville parameter in the two parameter directions
   Point getGrevilleParameter() const;
   /// Return greville parameter in the specified parameter direction
@@ -371,9 +403,40 @@ class LRBSpline2D : public Streamable
   bool overlaps(Element2D *el) const;
   /// Check if the support of this B-spline overlaps the given domain: umin, umax, vmin, wmax.
   bool overlaps(double domain[]) const;
+  bool overlaps(LRBSpline2D* bsp) const;
+  
   /// Check if the support of this B-spline cover the given domain: umin, umax, vmin, wmax.
   bool covers(double domain[]) const;
   bool covers(LRBSpline2D* bsp) const;
+
+  void getOverlapping(std::vector<LRBSpline2D*>& overlap);
+  
+  /// Set nesting level. Only for internal use
+  void setNestLevel(int nest_level)
+  {
+    nest_level_ = nest_level;
+  }
+  /// Get nesting level. Used in linear dependence check and projections
+  int getNestLevel()
+  {
+    return nest_level_;
+  }
+
+  /// Check if the nesting level is set
+  bool hasNestLevel()
+  {
+    return (nest_level_ >= 0);
+  }
+
+  /// Set nesting level to unknown
+  void unsetNestLevel()
+  {
+    nest_level_ = -1;
+  }
+
+  /// Compute nesting level
+  void computeNestLevel();
+  
   /// Add element to vector of elements in the support
   bool addSupport(Element2D *el) ;
   /// Remove element from vector of elements in the support
@@ -389,10 +452,23 @@ class LRBSpline2D : public Streamable
     return overload_;
   }
 
+  
   bool checkOverload();
   void eraseOverload()
   {
     overload_ = false;
+  }
+
+  bool adaptProjCoef(Point& coef);
+  
+  bool visited()
+  {
+    return visited_;
+  }
+
+  void setVisited(bool visited)
+  {
+    visited_ = visited;
   }
 
   /// Iterator to start of elements in the support
@@ -450,8 +526,6 @@ class LRBSpline2D : public Streamable
       coef_times_gamma_ = coef*gamma;;
     }
 
-  void reverseParameterDirection(bool dir_is_u);
-
   void swapParameterDirection();
 
   
@@ -477,10 +551,14 @@ class LRBSpline2D : public Streamable
   BSplineUniLR *bspline_v_;
   std::vector<Element2D*> support_;  // Elements lying in the support of this LRB-spline
 
+  int nest_level_; // Nesting depth. Tells about complete inclusion of the
+  // domain in the domain of another B-spline
+  
   // Used in least squares approximation with smoothing
   int coef_fixed_;  // 0=free coefficients, 1=fixed, 2=not affected
 
   mutable bool overload_;
+  mutable bool visited_;
 
   /// For a given interval inside one of the segments in the knot vector of a given direction, the
   /// univariate B-spline in the direction is a polynomial. After transforming the rectangle to the
@@ -491,6 +569,9 @@ class LRBSpline2D : public Streamable
   /// \param d         the direction (XFIXED for first parameter, YFIXED for second parameter)
   /// \return          a vector with the coefficients
   std::vector<double> unitIntervalBernsteinBasis(double start, double stop, Direction2D d) const;
+
+  double nestingWeight(LRBSpline2D* other);
+
 
 }; // end class LRBSpline2D
 

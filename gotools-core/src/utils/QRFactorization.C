@@ -133,7 +133,7 @@ void QRFactorization::QRSolve(vector<double>& Q, vector<double>& R, int n, int m
 	  x[kb*n+kr] -= val;
 	  if (fabs(R[kr*n+kr]) < 1.0e-18)
 	    {
-	      MESSAGE("QRFactorization::QRSolve: Division with zero");
+	      //MESSAGE("QRFactorization::QRSolve: Division with zero");
 	      x[kb*n+kr] = 0.0;
 	    }
 	  else

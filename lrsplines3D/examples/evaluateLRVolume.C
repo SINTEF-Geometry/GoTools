@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
 {
   // Read LR B-spline volume from file
   std::string infile("data/lrvol_fin.g2");
-  std::ifstream input(infile.c_str());
+  std::ifstream input(argv[1]/*infile.c_str()*/);
   
   // Prepare for output
   std::string outfile("data/grid_on_vol.g2");
@@ -121,7 +121,7 @@ int main(int argc, char *argv[])
   double wpar = 0.55*wmin + 0.45*wmax;
   std::cout << "Parameter tripple in which to evaluate: " << upar << ", " << vpar;
   std::cout << ", " << wpar << std::endl;
- 
+  std::cin >> upar >> vpar >> wpar;
   // Evaluate without information of the element in which the parameter is
   // situated
   // Only position

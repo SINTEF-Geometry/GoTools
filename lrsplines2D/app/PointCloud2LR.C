@@ -45,6 +45,7 @@
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include "GoTools/lrsplines2D/LRSurfApprox.h"
 #include "GoTools/lrsplines2D/LRApproxApp.h"
+#include "GoTools/lrsplines2D/DefineRefs2D.h"
 #include "GoTools/utils/timeutils.h"
 #include <iostream>
 #include <fstream>
@@ -60,7 +61,7 @@
 #define BOOST_TIMER_SOURCE
 #define BOOST_ALL_NO_LIB
 
-//#define DEBUG
+#define DEBUG
 //#define DEBUG_EL
 //#define DEBUG2
 #define DEBUG_PAR
@@ -93,6 +94,9 @@ void print_help_text()
   std::cout << "                 1 = use only multilevel B-spline approximation (MBA) \n";
   std::cout << "                 n = start with least squares, turn to MBA after n iterations \n";
   std::cout << "                -1 = initiate computation using MBA \n";
+  std::cout << "-proj <0/1/2>: 0 = not projection (default) \n";
+  std::cout << "               1 = projection with least square \n";
+  std::cout << "               2 = projection with radial basis functions (IDW) \n";
   std::cout << "Default setting is start with least squares, turn to MBA for the last iterations \n";
   std::cout << "-degree <polynomial degree> : 2 or 3 recommended \n";
   std::cout << "-nmb_coef <initial value> : Initial number of coefficients in each parameter direction \n";
@@ -228,7 +232,8 @@ int main(int argc, char *argv[])
   double smoothwg = 1.0e-9; 
   int initmba = 0; //1;  // Initiate surface using the mba method
   int mba = 0;      // Use least squares approximation
-  int tomba = std::min(5, max_iter-1);    // Turn to the mba method at 
+  int tomba = std::min(5, max_iter-1);    // Turn to the mba method at
+  int projection = 0;
   // iteration level 5 or in the last iteration
   int degree = 2;
   int outlierflag = 0;
@@ -246,7 +251,8 @@ int main(int argc, char *argv[])
   int initncoef = 10;
   int distribute_ncoef = 1;
 
-  int refcat1=1, refcat2=0, threshold1=2, threshold2=-1, alter=1;
+  RefineStrategy refcat1=fullSpan, refcat2=notSet;
+  int threshold1=2, threshold2=-1, alter=1;
   double swap = -100.0;
 
   int ki, kj;
@@ -322,6 +328,13 @@ int main(int argc, char *argv[])
 	    initmba = 1;
 	  else
 	    tomba = mm;
+	}
+      else if (arg == "-proj")
+	{
+	  int stat = fetchIntParameter(argc, argv, ki, projection, 
+				       nmb_par, par_read);
+	  if (stat < 0)
+	    return 1;
 	}
       else if (arg == "-degree")
 	{
@@ -431,19 +444,19 @@ int main(int argc, char *argv[])
 
 	  string cat(cat0);
 	  if (cat == "F")
-	    refcat1 = 1;
+	    refcat1 = fullSpan;
 	  else if (cat == "Ml")
-	    refcat1 = 2;
+	    refcat1 = minSpanSize;
 	  else if (cat == "Mu")
-	    refcat1 = 3;
+	    refcat1 = minSpanError;
 	  else if (cat == "Mc")
-	    refcat1 = 4;
+	    refcat1 = minSpanCombined;
 	  else if (cat == "S")
-	    refcat1 = 5;
+	    refcat1 = structuredMesh;
 	  else if (cat == "R")
-	    refcat1 = 6;
+	    refcat1 = restrictedMesh;
 	  else if (cat == "RL")
-	    refcat1 = 7;
+	    refcat1 = restrictedMeshElem;
 	  if (refcat2 < 1 || refcat2 > 7)
 	    refcat2 = refcat1;
 	}
@@ -457,19 +470,19 @@ int main(int argc, char *argv[])
 
 	  string cat(cat0);
 	  if (cat == "F")
-	    refcat2 = 1;
+	    refcat2 = fullSpan;
 	  else if (cat == "Ml")
-	    refcat2 = 2;
+	    refcat2 = minSpanSize;
 	  else if (cat == "Mu")
-	    refcat2 = 3;
+	    refcat2 = minSpanError;
 	  else if (cat == "Mc")
-	    refcat2 = 4;
+	    refcat2 = minSpanCombined;
 	  else if (cat == "S")
-	    refcat2 = 5;
+	    refcat2 = structuredMesh;
 	  else if (cat == "R")
-	    refcat2 = 6;
+	    refcat2 = restrictedMesh;
 	  else if (cat == "RL")
-	    refcat2 = 7;
+	    refcat2 = restrictedMeshElem;
 	}
       else if (arg == "-threshold")
 	{
@@ -727,8 +740,9 @@ int main(int argc, char *argv[])
 #endif
 
   // Move point cloud to origo
-  Point mid(0.5*(extent[2*(del-3)] + extent[2*(del-3)+1]),
-	    0.5*(extent[2*(del-2)] + extent[2*(del-2)+1]), 0.0);
+  // Point mid(0.5*(extent[2*(del-3)] + extent[2*(del-3)+1]),
+  // 	    0.5*(extent[2*(del-2)] + extent[2*(del-2)+1]), 0.0);
+    Point mid(0.0, 0.0, 0.0);
   for (ki=0; ki<nmb_pts; ++ki)
     for (kj=del-3; kj<del-1; ++kj)
       {
@@ -775,8 +789,9 @@ int main(int argc, char *argv[])
 #ifdef DEBUG
   // Write translated surface and points to g2 format
   vector<double> data2;
+  int ptpos = (del == 5) ? 2 : 0;
   data2.reserve(nmb_pts*3);
-  for (ki=0, kj=0; ki<nmb_pts; ++ki, kj+=del)
+  for (ki=0, kj=ptpos; ki<nmb_pts; ++ki, kj+=del)
     data2.insert(data2.end(), data.begin()+kj, data.begin()+kj+3);
   PointCloud3D cloud(data2.begin(), nmb_pts);
 
@@ -822,11 +837,11 @@ int main(int argc, char *argv[])
   if (distribute_ncoef)
     approx = shared_ptr<LRSurfApprox>(new LRSurfApprox(nc[0], order, nc[1], order, data, del-2, 
 						       AEPSGE, initmba ? true : false, mba_coef,
-						       true, true));
+						       projection, true, false));
   else
     approx = shared_ptr<LRSurfApprox>(new LRSurfApprox(nmb_coef, order, nmb_coef, order, data, del-2, 
 						       AEPSGE, initmba ? true : false, mba_coef,
-						       true, true));
+						       projection, true, false));
   approx->setSmoothingWeight(smoothwg);
   approx->setSmoothBoundary(true);
   if (mba)

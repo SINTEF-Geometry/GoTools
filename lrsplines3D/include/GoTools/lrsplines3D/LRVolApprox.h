@@ -43,6 +43,7 @@
 #include "GoTools/trivariate/SplineVolume.h"
 #include "GoTools/trivariate/RectTriDomain.h"
 #include "GoTools/lrsplines3D/LRSplineVolume.h"
+#include "GoTools/lrsplines3D/DefineRefs3D.h"
 #include <vector>
 
 
@@ -92,7 +93,7 @@ class LRVolApprox
   ///                     parameter value
   /// \param repar Perform reparameterization during iterations
   LRVolApprox(std::vector<double>& points, int dim, double epsge, 
-              double mba_level = 0.0,
+              double mba_level = 0.0, int proj_type = 0,
               bool closest_dist=true, 
               bool repar=false);
 
@@ -151,7 +152,7 @@ class LRVolApprox
               std::vector<double>& points, 
               int dim, double domain[], double epsge, 
               //bool init_mba=false, 
-              double mba_level = 0.0,
+              double mba_level = 0.0, int proj_type = 0,
               bool closest_dist=true, bool repar=false);
 
   /// Constructor given a parameterized point set and an initial
@@ -282,6 +283,31 @@ class LRVolApprox
       initMBA_ = initMBA;
     }
 
+  void setProjectionType(int proj_type)
+  {
+    proj_type_ = proj_type;
+  }
+
+  void unsetProjection()
+  {
+    proj_type_ = 0;
+  }
+
+  int getProjectionType()
+  {
+    return proj_type_;
+  }
+
+  void setSmoothProjection(bool apply_smooth)
+  {
+    apply_smooth_proj_ = apply_smooth;
+  }
+
+  bool getSmoothProjection()
+  {
+    return apply_smooth_proj_;
+  }
+  
     /// Add lower constraint. Only functional (1D volume)
     void addLowerConstraint(double minval)
     {
@@ -372,7 +398,30 @@ class LRVolApprox
       average_outside = avout_;
     }
 
-    
+     /// Refinement strategy
+    /// category1: from DefineRefs3D.h
+    ///            1 = full span, 2 = minimum span l, 3 = minimum span u,
+    ///            4 = minimum span c, 5 = structured mesh, 6 = restricted mesh
+    /// alter: 0 = refine in all parameter directions, 1 = refine in alternating directions
+    /// threshold1: 0 = no, 1 = td, 2 = tn, 3 = tk, 4 = td+tk (not all combinations with
+    ///            category exist, if non-existing threshold is set to 0
+    /// swap: Change category to category2 when approximation efficiency is below this level
+    /// category2, threshold2: after swap, as above
+    void setRefinementStrategy(RefineStrategy3D category, int alter, int threshold)
+    {
+      category_ = category;
+      alter_ = alter;
+      threshold_ = threshold;
+    }
+
+  /// Return informaion on applied refinement strategy
+    void getRefinementStrategy(RefineStrategy3D& category, int& alter, int& threshold)
+    {
+      category = category_;
+      alter = alter_;
+      threshold = threshold_;
+    }
+   
      /// Feature output
     void setFeatureOut(int ncell1, int ncell2, int ncell3)
     {
@@ -404,6 +453,8 @@ private:
     //int toMBA_;         // Start with LR-MBA at the given iteration step
     bool initMBA_;      // The initial volume is made using LR-MBA
     double initMBA_coef_; // Initial height of constant volume
+  int proj_type_;  // Type of quasi interpolation. 0=do not use quasi interpolation
+  bool apply_smooth_proj_;
 
     int face_derivs_[6];
     double maxdist_;
@@ -446,6 +497,12 @@ private:
     bool fix_boundary_;
     //bool make_ghost_points_;
 
+    // Refinement strategy
+  RefineStrategy3D category_;
+  int alter_, threshold_;
+  double prev_el_out_;
+  double prev_thresh_;
+ 
     // Variable tolerance 
     std::vector<TolBox> tolerances_;
 
@@ -473,9 +530,13 @@ private:
     void computeAccuracyElement_omp(std::vector<double>& points,
                                    int nmb, int del, const Element3D* elem);
 
+  void runMBAUpdate(double mineps, double delta);
+  void runProjection(int proj_type, int it_level, int num_points=-1);
+  
     /// Refine volume
-    int refineVol(double threshold);
-    void refineVol2();
+  int refineVol(int iter, int& dir, double thresh);
+  int refineVol3(int iter, int& dir, double thresh);
+  int refineVol4(int iter, int& dir, double thresh);
     
     /// Create initial LR B-spline volume
     void makeInitVol(int dim);
@@ -511,6 +572,7 @@ private:
                           double& wmin, double& wmax );
 
     void defineRefs(LRBSpline3D* bspline, double average_out,
+		    int dir,
 		    std::vector<LRSplineVolume::Refinement3D>& refs_x,
 		    std::vector<LRSplineVolume::Refinement3D>& refs_y,
 		    std::vector<LRSplineVolume::Refinement3D>& refs_z,

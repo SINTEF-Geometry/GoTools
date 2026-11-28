@@ -57,6 +57,7 @@ struct Approx3DData
 {
   Approx3DData()
   {
+    pt_del_ = 0;
     ncond_ = 0;
     average_error_ = 0.0;
     max_error_ = max_error_prev_ = -1.0;
@@ -83,10 +84,12 @@ struct Approx3DData
 
   void addDataPoints(std::vector<double>::iterator start, 
 		     std::vector<double>::iterator end,
-		     bool sort_in_u)
+		     bool sort_in_u, int del=0)
   {
     data_points_.insert(data_points_.end(), start, end);
     sort_in_u_ = sort_in_u;
+    if (pt_del_ == 0)
+      pt_del_ = del;
   }
 
   void addDataPoints(std::vector<double>::iterator start, 
@@ -99,6 +102,13 @@ struct Approx3DData
 	data_points_.push_back(0.0);
       }
     sort_in_u_ = sort_in_u;
+    if (pt_del_ == 0)
+      pt_del_ = del + 1;
+  }
+
+  int getNmbValPrPoint()
+  {
+    return pt_del_;
   }
 
    std::vector<double>& getDataPoints()
@@ -208,6 +218,7 @@ struct Approx3DData
   void updateAccuracyInfo(int dim);
 
   std::vector<double> data_points_;
+  int pt_del_;
 
   int ncond_;
   bool sort_in_u_;
@@ -258,6 +269,17 @@ class Element3D
   double vmax() const         { return stop_v_;  }
    /// End parameter in the third parameter direction
   double wmax() const         { return stop_w_;  }
+
+  double pmin(Direction3D d) const
+  {
+    return (d == XDIR) ? start_u_ : ((d == YDIR) ? start_v_ : start_w_);
+  }
+  
+  double pmax(Direction3D d) const
+  {
+    return (d == XDIR) ? stop_u_ : ((d == YDIR) ? stop_v_ : stop_w_);
+  }
+  
   /// Volume of element domain
   double volume() const         { return (stop_w_-start_w_)*(stop_v_-start_v_)*(stop_u_-start_u_);  }
    /// Start iterator to B-splines with this element in their support
@@ -300,10 +322,41 @@ class Element3D
    /// Modify the end of the element domain in the third parameter direction
   void setWmax(double w)                           { stop_w_  = w; }
 
-  bool isOverloaded() const;
-  void resetOverloadCount()    { overloadCount_ = 0;      }
-  int incrementOverloadCount() { return overloadCount_++; }
-  int getOverloadCount() const { return overloadCount_;   }
+   bool isOverloaded() const;
+   bool isOverloaded(int lowest_nmb);
+   bool initOverload()
+   {
+     if (isOverloaded())
+       overload_ = true;
+     return overload_;
+   }
+   
+   bool initOverload(int lowest_nmb)
+   {
+     if (isOverloaded(lowest_nmb))
+       overload_ = true;
+     return overload_;
+   }
+   
+   void setOverload(bool overload)
+   {
+     overload_ = overload;
+   }
+   bool getOverload()
+   {
+     return overload_;
+   }
+
+   bool resetOverload();
+   void eraseOverload()
+   {
+     overload_ = false;
+   }
+   
+  // bool isOverloaded() const;
+  // void resetOverloadCount()    { overloadCount_ = 0;      }
+  // int incrementOverloadCount() { return overloadCount_++; }
+  // int getOverloadCount() const { return overloadCount_;   }
 
 
   void updateBasisPointers(std::vector<LRBSpline3D*> &basis) ;
@@ -321,6 +374,15 @@ class Element3D
       return false;
   }
 
+   /// Number of double values for each point
+   int getNmbValPrPoint()
+   {
+     if (approx_data_.get())
+       return approx_data_->getNmbValPrPoint();
+     else
+       return 0;
+   }
+	  
   /// Number of scattered data points
   int nmbDataPoints();
  
@@ -515,12 +577,13 @@ class Element3D
 
   std::vector<LRBSpline3D*> support_;
 
-  int overloadCount_ ;
+  //int overloadCount_ ;
 
   bool is_modified_;
 
   // Information used in the context of approximation
   mutable shared_ptr<Approx3DData> approx_data_;
+  mutable bool overload_;
 
 };
 

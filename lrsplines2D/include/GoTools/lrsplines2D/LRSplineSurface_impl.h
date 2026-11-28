@@ -296,6 +296,9 @@ LRSplineSurface::LRSplineSurface(int deg_u,
 
   // Identifying all elements and mapping the basis functions to them
   emap_ = construct_element_map_(mesh_, bsplines_);
+  
+ for (auto it=bsplines_.begin(); it!=bsplines_.end(); ++it)
+    it->second->setNestLevel(0);
 }
 
 //==============================================================================
@@ -349,6 +352,9 @@ LRSplineSurface::LRSplineSurface(int deg_u,
     }
   }
   emap_ = construct_element_map_(mesh_, bsplines_);
+  
+ for (auto it=bsplines_.begin(); it!=bsplines_.end(); ++it)
+    it->second->setNestLevel(0);
 }
 
 }; // end namespace Go

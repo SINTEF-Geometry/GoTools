@@ -45,6 +45,7 @@
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include "GoTools/lrsplines3D/Direction3D.h"
 #include "GoTools/lrsplines3D/LRBSpline3D.h"
+#include "GoTools/lrsplines3D/LRVolBasisEvalResult.h"
 #include "GoTools/lrsplines2D/BSplineUniLR.h"
 
 #include <array>
@@ -188,6 +189,9 @@ class LRSplineVolume : public ParamVolume
 
     static ElemKey generate_key(const double&, const double&, const double&);
 
+  //   BsplineIndexMap: Maps each B-spline (represented by a pointer
+  //     to a LRBSpline3D) to a linear Index.
+  typedef std::map<LRBSpline3D*, size_t> Bspline3DIndexMap;
 
   // ----------------------------------------------------
   // ---- CONSTRUCTORS, COPY, SWAP AND ASSIGNMENT -------
@@ -255,8 +259,19 @@ class LRSplineVolume : public ParamVolume
   /// Construct a LRSplineVolume based on a spline volume
   LRSplineVolume(SplineVolume *surf, double knot_tol);
 
+  /// Define LRSplineVolume given mesh and univariate and trivariate
+  /// bsplines
+  LRSplineVolume(Mesh3D& mesh, std::vector<std::unique_ptr<BSplineUniLR> >& uni1,
+		 std::vector<std::unique_ptr<BSplineUniLR> >& uni2,
+		 std::vector<std::unique_ptr<BSplineUniLR> >& uni3,
+		 std::vector<std::unique_ptr<LRBSpline3D> >& bspl,
+		 bool rational=false, double knot_tol = 1.0e-8);
+  
   /// construct empty, invalid spline
-  LRSplineVolume() {} 
+  LRSplineVolume()
+  {
+    curr_element_ = NULL;
+  } 
 
   /// Copy constructor
   LRSplineVolume(const LRSplineVolume& rhs);
@@ -575,26 +590,159 @@ class LRSplineVolume : public ParamVolume
   /// Total number of elements (mesh cells)
   int numElements() const {return (int)emap_.size();}
 
-#if 0
-  // @@@ VSK. This functionality interface is fetched from the Trondheim code
-  // We need a storage for last element evaluated. Index or reference?
-  // Should the element be identified by index or reference?
-  // How should the set of elements be traversed? Iterator?
-  void computeBasis (double param_u, double param_v, double param_w,
-		     BasisPtsSf     & result, int iEl=-1 ) const;
-  void computeBasis (double param_u, double param_v, double param_w,
-		     BasisDerivsSf  & result, int iEl=-1 ) const;
-  void computeBasis (double param_u, double param_v, double param_w,
-		     BasisDerivsSf2 & result, int iEl=-1 ) const;
-  void computeBasis (double param_u,
-		     double param_v,
-		     double param_w,
-		     std::vector<std::vector<double> >& result,
-		     int derivs=0,
-		     int iEl=-1 ) const;
-  int getElementContaining(double u, double v, double w) const;
-#endif
+     /// Convenience to be used in computations of basis grids
+    typedef std::vector<double>  Dvector; 
+    /// Convenience to be used in computations of basis grids
+    typedef std::vector<Dvector> Dmatrix;
   
+   /// Evaluate positions of all basis values in a specified
+    /// grid.  For non-rationals this is an interface to BsplineBasis::computeBasisValues 
+    /// where the basis values in each parameter direction are multiplied to 
+    /// compute B_i(u)*B_j(v)*B_k(w), for rationals the routine evaluates the rational 
+    /// basis functions, i.e. the basis functions are divided by the denominator of the surface in 
+    /// the given parameter direction
+    /// \param param_u this vector holds all the numerical values for the first parameter 
+    ///                where evaluation will tak place
+    /// \param param_v this vector holds all the numerical values for the second parameter 
+    ///                where evaluation will tak place
+    /// \param param_vwthis vector holds all the numerical values for the third parameter 
+    ///                where evaluation will tak place
+    /// \param basisValues the value of all basis functions. The first matrix dimension 
+    ///                will correspond to all evaluation parameters, i.e. the size is 
+    ///                param_u.size()*param_v*size(). The second 
+    ///                dimension correspond to all coefficients, i.e. 
+    ///                nmb_coef_u*nmb_coef_v*nmb_coef_w. Most entries in the matrix
+    ///                will be zero
+    void computeBasisGrid(const Dvector& param_u,
+			  const Dvector& param_v,
+			  const Dvector& param_w,
+			  Dmatrix& basisValues,
+			  Bspline3DIndexMap& bmap) const;
+
+     /// Compute basis values (position) in the parameter (param_u,param_v,param_w).
+    /// Store result in a BasisPtsVol entity
+    void computeBasis(double param_u,
+		      double param_v,
+		      double param_w,
+		      LRBasisPtsVol& result) const;
+
+    /// Compute basis values (position) in the parameter (param_u, param_v, param_w).
+    /// Store result in a BasisPtsVol entity
+    void computeBasis(double param_u,
+		      double param_v,
+		      double param_w,
+		      Element3D *elem,
+		      LRBasisPtsVol& result) const;
+  
+    /// Compute basis values (position and 1. derivatives) in the parameter 
+    /// (param_u ,param_v, param_w). Store result in a BasisDerivVol entity
+    void computeBasis(double param_u,
+		      double param_v,
+		       double param_w,
+		      LRBasisDerivsVol& result) const;
+  
+    /// Compute basis values (position and 1. derivatives) in the parameter 
+    /// (param_u, param_v, param_w). Store result in a BasisDerivVol entity
+    void computeBasis(double param_u,
+		      double param_v,
+		       double param_w,
+		      Element3D* elem,
+		      LRBasisDerivsVol& result) const;
+  /*  
+    /// Compute basis values (position and uni-directed derivatives) in the parameter
+    /// (param_u, param_v, param_w). Store result in a BasisDerivsVolU entity
+    void computeBasis(double param_u,
+		      double param_v,
+                      int derivs,
+		      BasisDerivsVolU& result, Element3D* elem,
+		      bool evaluate_from_right = true) const;
+  */
+    /// Compute basis values (position and 1. and 2. derivatives) in the parameter 
+    /// (param_u, param_v, param_w). Store result in a BasisDerivVol2 entity
+     void computeBasis(double param_u,
+		       double param_v,
+		       double param_w,
+		       LRBasisDerivsVol2& result) const;
+
+     void computeBasis(double param_u,
+		       double param_v,
+		       double param_w,
+		       Element3D* elem,
+		       LRBasisDerivsVol2& result) const;
+
+    /// Compute basis values (position and 1., 2. and 3. derivatives) in the parameter
+    /// (param_u,param_v, param_w). Store result in a BasisDerivVol3 entity
+    void computeBasis(double param_u,
+		      double param_v,
+		      double param_w,
+		      LRBasisDerivsVol3& result) const;
+
+     void computeBasis(double param_u,
+                       double param_v,
+		       double param_w,
+		       Element3D* elem,
+                       LRBasisDerivsVol3& result) const;
+  
+     /// Compute basis grid (position) in the parameter pairs combined from param_u, param_v
+    /// and param_w. Store result in a vector of BasisPtsVol.
+    void computeBasisGrid(const Dvector& param_u,
+			  const Dvector& param_v,
+			  const Dvector& param_w,
+			  std::vector<LRBasisPtsVol>& result) const;
+  
+  
+    /// Evaluate positions and first derivatives of all basis values in a specified
+    /// grid.  For non-rationals this is an interface to BsplineBasis::computeBasisValues 
+    /// where the basis values in each parameter direction are multiplied to 
+    /// compute B_i(u)*B_j(v)*B_k(w), for rationals the routine evaluates the rational 
+    /// basis functions, i.e. the basis functions are divided by the denominator of the surface in 
+    /// the given parameter direction
+    /// \param param_u this vector holds all the numerical values for the first parameter 
+    ///                where evaluation will tak place
+    /// \param param_v this vector holds all the numerical values for the second parameter 
+    ///                where evaluation will tak place
+    /// \param param_w this vector holds all the numerical values for the third parameter 
+    ///                where evaluation will tak place
+    /// \param basisValues the value of all basis functions. The first matrix dimension 
+    ///                will correspond to all evaluation parameters, i.e. the size is 
+    ///                param_u.size()*param_v*size()*param_w*size(). The second 
+    ///                dimension correspond to all coefficients, i.e. 
+    ///                nmb_coef_u*nmb_coef_v*nmb_coef_w. Most entries in the matrix
+    ///                will be zero
+    /// \param basisDerivs_u the derivative of all basis functions, size as above
+    /// \param basisDerivs_v the derivative of all basis functions
+    /// \param basisDerivs_w the derivative of all basis functions
+    void computeBasisGrid(const Dvector& param_u,
+			  const Dvector& param_v,
+			  const Dvector& param_w,
+			  Dmatrix& basisValues,
+			  Dmatrix& basisDerivs_u,
+			  Dmatrix& basisDerivs_v,
+			  Dmatrix& basisDerivs_w,
+			  Bspline3DIndexMap& bmap) const;
+
+    /// Compute basis grid (position and 1. derivatives) in the parameter pairs 
+    /// combined from param_u, param_v and param_w. Store result in a vector of LRBasisDerivVol.
+    void computeBasisGrid(const Dvector& param_u,
+			  const Dvector& param_v,
+			  const Dvector& param_w,
+			  std::vector<LRBasisDerivsVol>& result) const; 
+
+
+    /// Compute basis grid (position and 1. and 2. derivatives) in the parameter pairs 
+    /// combined from param_u, param_v and param_w. Store result in a vector of LRBasisDerivVol2.
+    void computeBasisGrid(const Dvector& param_u,
+			  const Dvector& param_v,
+                          const Dvector& param_w,
+			  std::vector<LRBasisDerivsVol2>& result) const;
+
+    /// Compute basis grid (position and 1., 2. and 3. derivatives) in the parameter pairs
+    /// combined from param_u, param_v and param_w. Store result in a vector of LRBasisDerivVol3.
+    void computeBasisGrid(const Dvector& param_u,
+                          const Dvector& param_v,
+                          const Dvector& param_w,
+                          std::vector<LRBasisDerivsVol3>& result) const;
+   
   /// Identify element (mesh cell) in which the given parameter tripple is situated
   Element3D* coveringElement(double u, double v, double w) const;
 
@@ -633,7 +781,7 @@ class LRSplineVolume : public ParamVolume
   bool isFullTensorProduct() const;
 
   /// Tolerance for equality of knots
-  double getKnotTol()
+  double getKnotTol() const
   {
     return knot_tol_;
   }
@@ -717,19 +865,6 @@ class LRSplineVolume : public ParamVolume
   /// expandToFullTensorProduct().
   virtual SplineVolume* asSplineVolume(); 
 
-  // ----------------------------------------------------
-  // --------------- DEBUG FUNCTIONS --------------------
-  // ----------------------------------------------------
-
-  /* // Produce an ASCII image of the underlying mesh.  */
-  /* // NB: requires a wide character stream (wostream). */
-  /* void plotMesh(std::wostream& os) const; */
-
-  /* // Produce a series of ASCII images showing the support of */
-  /* // each basis function and its relation to the mesh. */
-  /* // NB: requires a wide character stream (wostream). */
-  /* void plotBasisFunctionSupports(std::wostream& os) const; */
-
   /// Set element to be used as first try in point evaluation
   void setCurrentElement(Element3D* curr_el)
   {
@@ -756,6 +891,21 @@ class LRSplineVolume : public ParamVolume
   /// not self intersecting, and has linearly independent derivatives
   /// at the centre.
   bool isLeftHanded();
+
+  void setNestLevel();
+
+  // ----------------------------------------------------
+  // --------------- DEBUG FUNCTIONS --------------------
+  // ----------------------------------------------------
+
+  /* // Produce an ASCII image of the underlying mesh.  */
+  /* // NB: requires a wide character stream (wostream). */
+  /* void plotMesh(std::wostream& os) const; */
+
+  /* // Produce a series of ASCII images showing the support of */
+  /* // each basis function and its relation to the mesh. */
+  /* // NB: requires a wide character stream (wostream). */
+  /* void plotBasisFunctionSupports(std::wostream& os) const; */
 
 
 private:
@@ -816,7 +966,14 @@ private:
 		int from_v, int to_v,
 		int from_w, int to_w) const;
 
-}; 
+  // Used in grid evaluation of basis values
+  void getBasisValues(double upar, double vpar, double wpar, Element3D* elem,
+		      std::vector<std::pair<LRBSpline3D*, double> >& bvals) const;
+
+  void getBasisDerivs(double upar, double vpar, double wpar, Element3D* elem,
+		      std::vector<std::pair<LRBSpline3D*, std::vector<double> > >& bvals) const;
+  
+ }; 
 
 // end class LRSplineVolume
 

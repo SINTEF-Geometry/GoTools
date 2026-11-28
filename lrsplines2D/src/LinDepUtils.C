@@ -42,12 +42,23 @@
 #include "GoTools/lrsplines2D/Direction2D.h"
 #include <algorithm>
 #include <iostream>
+#include <fstream>
+
+//#define DEBUG
 
 using namespace std;
 using namespace Go;
+namespace
+{
+  // Private functions
+  bool overloadedMeshRectangles(const LRSplineSurface& surf);
+  
+  int overloadedKnotTuples(const LRSplineSurface& surf);
+  
+  bool initializeOverload(const LRSplineSurface& surf);
 
+}; // end anonumous namespace
 
-//#define DEBUG
 
   // Defines a structure that represents a mesh rectangle in two
   // parametric dimensions. NOTE: the mesh rectangle refers to the
@@ -79,6 +90,33 @@ struct MeshRectangle {
                             false;  // all the same!
     }
   };
+
+struct KnotTuple
+{
+  int u_ix_;
+  int v_ix_;
+  vector<LRBSpline2D*> bsplines_;
+
+  KnotTuple(int u_ix, int v_ix, LRBSpline2D *bspl)
+  {
+    u_ix_ = u_ix;
+    v_ix_ = v_ix;
+    bsplines_.push_back(bspl);
+  }
+
+  bool hasKnotTuple(int u_ix, int v_ix)
+  {
+    if (u_ix == u_ix_ && v_ix == v_ix_)
+      return true;
+    else
+      return false;
+  }
+
+  void addBspline(LRBSpline2D *bspl)
+  {
+    bsplines_.push_back(bspl);
+  }
+};
 
 
   //============================================================================
@@ -123,15 +161,16 @@ struct MeshRectangle {
 
   //============================================================================
   typedef unsigned int Index;
-  typedef std::map<Element2D*, Index> ElementIndexMap;
-  typedef std::map<LRBSpline2D*, Index> BsplineIndexMap;
   typedef map<MeshRectangle, Index> MeshRectangleIndexMap;
-  typedef std::vector<short > SwitchVector;
-  const SwitchVector::value_type ON = 1, OFF = 0;
-  typedef vector<vector<Index> > IncidenceMatrix;
-  Direction2D ds[2] = {XFIXED, YFIXED};
-  const vector<Direction2D> DirSeq(ds,ds+2);
+  // typedef std::map<Element2D*, Index> ElementIndexMap;
+  // typedef std::map<LRBSpline2D*, Index> BsplineIndexMap;
+  // typedef std::vector<short > SwitchVector;
+  // const SwitchVector::value_type ON = 1, OFF = 0;
+  // typedef vector<vector<Index> > IncidenceMatrix;
+  // Direction2D ds[2] = {XFIXED, YFIXED};
+  // const vector<Direction2D> DirSeq(ds,ds+2);
 
+#if 0
   //============================================================================
   // Constructs a map from an Element to a simple Index.
   //============================================================================
@@ -413,6 +452,7 @@ struct MeshRectangle {
     return;
   }
 
+
   //============================================================================
   // Tests for potential linear dependence among the LR B-splines of a
   // given LR spline. To be more precise: Tests whether a given LR
@@ -498,6 +538,7 @@ struct MeshRectangle {
         result.push_back(it_bs->first); // ... add it to the list of functions
     return result;
   }
+#endif
 
 //============================================================================
 // Fetch all unpeelable B-splines
@@ -516,34 +557,34 @@ vector<LRBSpline2D*> LinDepUtils::fetchUnpeelable( const LRSplineSurface& surf,
   vector<LRBSpline2D*> fun;
   
   // Initialize elements
-  bool overload = false;
-  int nmb_el_init = 0;
-  int expected_nmb = (surf.degree(XFIXED)+1)*(surf.degree(YFIXED)+1);
-  for (auto it1=surf.elementsBegin(); it1!=surf.elementsEnd(); ++it1)
-    {
-      bool found = it1->second->initOverload(expected_nmb);
-      if (found)
-	{
-	  overload = true;
-	  nmb_el_init++;
-	}
-    }
+  bool overload = initializeOverload(surf);
+  // int nmb_el_init = 0;
+  // int expected_nmb = (surf.degree(XFIXED)+1)*(surf.degree(YFIXED)+1);
+  // for (auto it1=surf.elementsBegin(); it1!=surf.elementsEnd(); ++it1)
+  //   {
+  //     bool found = it1->second->initOverload(expected_nmb);
+  //     if (found)
+  // 	{
+  // 	  overload = true;
+  // 	  nmb_el_init++;
+  // 	}
+  //   }
 
-  if (!overload)
-    return fun;
+  // if (!overload)
+  //   return fun;
 
-  // Initialize Bsplines
-  overload = false;
-  int nmb_bspl_init = 0;
-  for (auto it2=surf.basisFunctionsBegin(); it2!=surf.basisFunctionsEnd(); ++it2)
-    {
-      bool found = it2->second->checkOverload();
-      if (found)
-	{
-	  overload = true;
-	  nmb_bspl_init++;
-	}
-    }
+  // // Initialize Bsplines
+  // overload = false;
+  // int nmb_bspl_init = 0;
+  // for (auto it2=surf.basisFunctionsBegin(); it2!=surf.basisFunctionsEnd(); ++it2)
+  //   {
+  //     bool found = it2->second->checkOverload();
+  //     if (found)
+  // 	{
+  // 	  overload = true;
+  // 	  nmb_bspl_init++;
+  // 	}
+  //   }
 
   if (!overload)
     return fun;
@@ -555,22 +596,22 @@ vector<LRBSpline2D*> LinDepUtils::fetchUnpeelable( const LRSplineSurface& surf,
       bool curr = it2->second->getOverload();
       if (curr)
   	{
-  	  std::cout << it2->second.get() << std::endl;
+  	  //std::cout << it2->second.get() << std::endl;
   	  LRBSpline2D *cand = it2->second.get();
   	  of1 << "410 1 0 4 255 0 0 255" << std::endl;
   	  of1 << "4" << std::endl;
-  	  of1 << cand>umin() << " " << cand>vmin() << " 0 ";
-  	  of1 << cand>umax() << " " << cand>vmin() << " 0" << std::endl;
-  	  of1 << cand>umin() << " " << cand>vmin() << " 0 ";
-  	  of1 << cand>umin() << " " << cand>vmax() << " 0" << std::endl;
-  	  of1 << cand>umax() << " " << cand>vmin() << " 0 ";
-  	  of1 << cand>umax() << " " << cand>vmax() << " 0" << std::endl;
-  	  of1 << cand>umin() << " " << cand>vmax() << " 0 ";
-  	  of1 << cand>umax() << " " << cand>vmax() << " 0" << std::endl;
+  	  of1 << cand->umin() << " " << cand->vmin() << " 0 ";
+  	  of1 << cand->umax() << " " << cand->vmin() << " 0" << std::endl;
+  	  of1 << cand->umin() << " " << cand->vmin() << " 0 ";
+  	  of1 << cand->umin() << " " << cand->vmax() << " 0" << std::endl;
+  	  of1 << cand->umax() << " " << cand->vmin() << " 0 ";
+  	  of1 << cand->umax() << " " << cand->vmax() << " 0" << std::endl;
+  	  of1 << cand->umin() << " " << cand->vmax() << " 0 ";
+  	  of1 << cand->umax() << " " << cand->vmax() << " 0" << std::endl;
   	}
      }
   std::cout << std::endl;
-  writeg2Mesh(surf, of1);
+  //writeg2Mesh(surf, of1);
 #endif
 
   bool changed = true;
@@ -578,13 +619,17 @@ vector<LRBSpline2D*> LinDepUtils::fetchUnpeelable( const LRSplineSurface& surf,
     {
       changed = false;
 
+      overload = overloadedKnotTuples(surf);
+      
       // Reset element flag
-      overload = false;
       for (auto it1=surf.elementsBegin(); it1!=surf.elementsEnd(); ++it1)
 	{
 	  bool curr = it1->second->getOverload();
 	  if (curr)
 	    {
+	      // Element2D::resetOverload sets the overload flag in the current
+	      // element and removes the overload flag in the supporting B-splines
+	      // if the element is not overloaded
 	      bool found = it1->second->resetOverload();
 	      if (found)
 		overload = true;
@@ -592,26 +637,8 @@ vector<LRBSpline2D*> LinDepUtils::fetchUnpeelable( const LRSplineSurface& surf,
 		changed = true;
 	    }
 	}
-
-      // if (!overload)
-      // 	break;
-      // if (!changed)
-      // 	break;
-
-      // // Reset Bspline flag
-      // overload = false;
-      // for (auto it2=surf.basisFunctionsBegin(); it2!=surf.basisFunctionsEnd(); ++it2)
-      // 	{
-      // 	  bool curr = it2->second->getOverload();
-      // 	  if (curr)
-      // 	    {
-      // 	      bool found = it2->second->checkOverload();
-      // 	      if (found)
-      // 		overload = true;
-      // 	      if (curr != found)
-      // 		changed = true;
-      // 	    }
-      // 	}
+      if (!overload)
+	break;
     }
 
 #ifdef DEBUG
@@ -625,18 +652,18 @@ vector<LRBSpline2D*> LinDepUtils::fetchUnpeelable( const LRSplineSurface& surf,
   	  LRBSpline2D *cand = it2->second.get();
   	  of2 << "410 1 0 4 255 0 0 255" << std::endl;
   	  of2 << "4" << std::endl;
-  	  of2 << cand>umin() << " " << cand>vmin() << " 0 ";
-  	  of2 << cand>umax() << " " << cand>vmin() << " 0" << std::endl;
-  	  of2 << cand>umin() << " " << cand>vmin() << " 0 ";
-  	  of2 << cand>umin() << " " << cand>vmax() << " 0" << std::endl;
-  	  of2 << cand>umax() << " " << cand>vmin() << " 0 ";
-  	  of2 << cand>umax() << " " << cand>vmax() << " 0" << std::endl;
-  	  of2 << cand>umin() << " " << cand>vmax() << " 0 ";
-  	  of2 << cand>umax() << " " << cand>vmax() << " 0" << std::endl;
+  	  of2 << cand->umin() << " " << cand->vmin() << " 0 ";
+  	  of2 << cand->umax() << " " << cand->vmin() << " 0" << std::endl;
+  	  of2 << cand->umin() << " " << cand->vmin() << " 0 ";
+  	  of2 << cand->umin() << " " << cand->vmax() << " 0" << std::endl;
+  	  of2 << cand->umax() << " " << cand->vmin() << " 0 ";
+  	  of2 << cand->umax() << " " << cand->vmax() << " 0" << std::endl;
+  	  of2 << cand->umin() << " " << cand->vmax() << " 0 ";
+  	  of2 << cand->umax() << " " << cand->vmax() << " 0" << std::endl;
   	}
      }
   std::cout << std::endl;
-  writeg2Mesh(surf, of2);
+  //writeg2Mesh(surf, of2);
 #endif
   
   if (!overload)
@@ -652,8 +679,38 @@ vector<LRBSpline2D*> LinDepUtils::fetchUnpeelable( const LRSplineSurface& surf,
 #ifdef DEBUG
   std::cout << "Nmb overloaded pre meshrec: " << nmb << std::endl;
 #endif
-  
-  overload = (nmb >= minnmb) ? overloadedMeshRectangles(surf) : false;
+
+  changed = true;
+  while (changed)
+    {
+      changed = false;
+
+      overload = (nmb >= minnmb) ? overloadedMeshRectangles(surf) : false;
+      if (!overload)
+	break;
+      
+      overload = overloadedKnotTuples(surf);
+      
+      // Reset element flag
+      for (auto it1=surf.elementsBegin(); it1!=surf.elementsEnd(); ++it1)
+	{
+	  bool curr = it1->second->getOverload();
+	  if (curr)
+	    {
+	      // Element2D::resetOverload sets the overload flag in the current
+	      // element and removes the overload flag in the supporting B-splines
+	      // if the element is not overloaded
+	      bool found = it1->second->resetOverload();
+	      if (found)
+		overload = true;
+	      if (curr != found)
+		changed = true;
+	    }
+	}
+
+      if (!overload)
+	break;
+    }
   
   if (overload)
     {
@@ -674,12 +731,220 @@ vector<LRBSpline2D*> LinDepUtils::fetchUnpeelable( const LRSplineSurface& surf,
 
   return fun;
 }
+  
+//==============================================================================
+// Given a set of non-peelable B-splines, check if they can be combined in
+// linear dependence relations
+//
+void LinDepUtils::checkOverloaded(int minNmb, vector<LRBSpline2D*>& funs,
+				  vector<vector<LRBSpline2D*> >& lindep)
+//==============================================================================
+{
+  // Check input
+  size_t nmb_funs = funs.size();
+  
+  if (funs.size() < minNmb)
+    return;
 
+#ifdef DEBUG
+  std::ofstream of("overloaded.g2");
+  for (size_t ki=0; ki<funs.size(); ++ki)
+    {
+      of << "410 1 0 4 255 0 0 255" << std::endl;
+      of << "4" << std::endl;
+      of << funs[ki]->umin() << " " << funs[ki]->vmin() << " 0 ";
+      of << funs[ki]->umax() << " " << funs[ki]->vmin() << " 0" << std::endl;
+      of << funs[ki]->umin() << " " << funs[ki]->vmin() << " 0 ";
+      of << funs[ki]->umin() << " " << funs[ki]->vmax() << " 0" << std::endl;
+      of << funs[ki]->umax() << " " << funs[ki]->vmin() << " 0 ";
+      of << funs[ki]->umax() << " " << funs[ki]->vmax() << " 0" << std::endl;
+      of << funs[ki]->umin() << " " << funs[ki]->vmax() << " 0 ";
+      of << funs[ki]->umax() << " " << funs[ki]->vmax() << " 0" << std::endl;
+    }
+#endif
+  // To ensure correct nesting level
+  // and collect zero depth B-splines
+  for (size_t ki=0; ki<funs.size(); ++ki)
+    {
+      funs[ki]->setNestLevel(-1);
+      funs[ki]->computeNestLevel();
+      int nestdepth = funs[ki]->getNestLevel();
+      if (nestdepth == 0)
+	{
+	  vector<LRBSpline2D*> zerodepth;
+	  zerodepth.push_back(funs[ki]);
+	  lindep.push_back(zerodepth);
+	}
+    }
+
+  // Distribute higher depth B-splines
+   for (size_t ki=0; ki<funs.size(); ++ki)
+    {
+      int nestdepth = funs[ki]->getNestLevel();
+      if (nestdepth == 0)
+	continue;
+
+      size_t kj;
+      for (kj=0; kj<lindep.size(); ++kj)
+	{
+	  if (lindep[kj][0]->covers(funs[ki]))
+	    {
+	      lindep[kj].push_back(funs[ki]);
+	      break;
+	    }
+	}
+      if (kj == lindep.size())
+	std::cout << "Stop here" << std::endl;
+    }
+
+   // Check for overlap between linear dependence groups
+   for (size_t ki=0; ki<lindep.size(); ++ki)
+     {
+       for (size_t kj=0; kj<lindep[ki].size(); ++kj)
+	 {
+	   if (lindep[ki][kj]->getNestLevel() > 0)
+	     break;
+	   for (size_t kr=ki+1; kr<lindep.size(); )
+	     {
+	       size_t kh;
+	       int depth = 0;
+	       for (kh=0; kh<lindep[kr].size(); ++kh)
+		 {
+		   depth = lindep[kr][kh]->getNestLevel();
+		   if (depth > 0)
+		     break;
+		   if (lindep[ki][kj]->overlaps(lindep[kr][kh]))
+		     {
+		       lindep[ki].insert(lindep[ki].begin()+kj, lindep[kr].begin(),
+					 lindep[kr].begin()+kh);
+		       lindep[ki].insert(lindep[ki].end(), lindep[kr].begin()+kh+1,
+					 lindep[kr].end());
+		       lindep.erase(lindep.begin()+kr);
+		       break;
+		     }
+		 }
+	       if (kh==lindep[kr].size() || depth > 0)
+		 ++kr;
+	     }
+	 }
+     }
+
+   for (int ka=(int)lindep.size()-1; ka>=0; --ka)
+     if (lindep[ka].size() < minNmb)
+       lindep.erase(lindep.begin() + ka);
+   
+#ifdef DEBUG
+  std::cout << "Number of linear dependency sources: " << lindep.size() << std::endl;
+  for (size_t kj=0; kj<lindep.size(); ++kj)
+    {
+      for (size_t kr=0; kr<lindep[kj].size(); ++kr)
+	{
+	  if (lindep[kj][kr]->getNestLevel() > 0)
+	    break;
+	  std::cout << lindep[kj][kr]->umin() << " " << lindep[kj][kr]->umax() << " ";
+	  std::cout << lindep[kj][kr]->vmin() << " " << lindep[kj][kr]->vmax() << std::endl;
+	}
+      std::cout << lindep[kj].size() << std::endl;
+    }
+#endif
+}
+
+
+
+namespace {
+
+
+//==============================================================================
+// Check if identified overloaded B-splines have overloaded knot tuples
+//
+
+int overloadedKnotTuples(const LRSplineSurface& surf)
+//==============================================================================
+{
+  vector<LRBSpline2D*> overload;
+  vector<KnotTuple> knot_tuples;
+  int numbspl = 0;
+  for (auto it2=surf.basisFunctionsBegin(); it2!=surf.basisFunctionsEnd(); ++it2)
+    {
+      bool curr = it2->second->getOverload();
+      if (!curr)
+	continue;
+
+      numbspl++;
+      overload.push_back(it2->second.get());
+
+      vector<int> kvec1 = it2->second->kvec(XFIXED);
+      vector<int> kvec2 = it2->second->kvec(YFIXED);
+      for (size_t ki=0; ki<kvec1.size(); ++ki)
+	for (size_t kj=0; kj<kvec2.size(); ++kj)
+	  {
+	    size_t kr;
+	    for (kr=0; kr<knot_tuples.size(); ++kr)
+	      if (knot_tuples[kr].hasKnotTuple(kvec1[ki], kvec2[kj]))
+		break;
+	    if (kr == knot_tuples.size())
+	      knot_tuples.push_back(KnotTuple(kvec1[ki], kvec2[kj], it2->second.get()));
+	    else
+	      knot_tuples[kr].addBspline(it2->second.get());
+	  }
+    }
+
+  for (size_t ki=0; ki<knot_tuples.size(); ++ki)
+    {
+      if (knot_tuples[ki].bsplines_.size() == 1 &&
+	  knot_tuples[ki].bsplines_[0]->getOverload())
+	{
+	  knot_tuples[ki].bsplines_[0]->eraseOverload();
+	  numbspl--;
+	}
+    }
+
+  return (numbspl > 0);
+}
+
+//==============================================================================
+// First round: identify B-splines with only overloaded elements
+// 
+bool initializeOverload(const LRSplineSurface& surf)
+//==============================================================================
+{
+  // Initialize elements
+  bool overload = false;
+  int nmb_el_init = 0;
+  int expected_nmb = (surf.degree(XFIXED)+1)*(surf.degree(YFIXED)+1);
+  for (auto it1=surf.elementsBegin(); it1!=surf.elementsEnd(); ++it1)
+    {
+      bool found = it1->second->initOverload(expected_nmb);
+      if (found)
+	{
+	  overload = true;
+	  nmb_el_init++;
+	}
+    }
+
+  if (!overload)
+    return false;
+
+  // Initialize Bsplines
+  overload = false;
+  int nmb_bspl_init = 0;
+  for (auto it2=surf.basisFunctionsBegin(); it2!=surf.basisFunctionsEnd(); ++it2)
+    {
+      bool found = it2->second->checkOverload();
+      if (found)
+	{
+	  overload = true;
+	  nmb_bspl_init++;
+	}
+    }
+
+  return overload;
+}
 
 //==============================================================================
 // Check if identified overloaded B-splines have overloaded mesh rectangles.
 // 
-bool LinDepUtils::overloadedMeshRectangles(const LRSplineSurface& surf)
+bool overloadedMeshRectangles(const LRSplineSurface& surf)
 //==============================================================================
 {
 #ifdef DEBUG
@@ -825,115 +1090,6 @@ bool LinDepUtils::overloadedMeshRectangles(const LRSplineSurface& surf)
   return (bspl.size() > 0);
 }
 
-//==============================================================================
-// Given a set of non-peelable B-splines, check if they can be combined in
-// linear dependence relations
-//
-void LinDepUtils::checkOverloaded(int minNmb, vector<LRBSpline2D*>& funs,
-				  vector<vector<LRBSpline2D*> >& lindep)
-//==============================================================================
-{
-  // Check input
-  size_t nmb_funs = funs.size();
-  
-  if (funs.size() < minNmb)
-    return;
 
-#ifdef DEBUG
-  std::ofstream of("overloaded.g2");
-  for (size_t ki=0; ki<funs.size(); ++ki)
-    {
-      of << "410 1 0 4 255 0 0 255" << std::endl;
-      of << "4" << std::endl;
-      of << funs[ki]->umin() << " " << funs[ki]->vmin() << " 0 ";
-      of << funs[ki]->umax() << " " << funs[ki]->vmin() << " 0" << std::endl;
-      of << funs[ki]->umin() << " " << funs[ki]->vmin() << " 0 ";
-      of << funs[ki]->umin() << " " << funs[ki]->vmax() << " 0" << std::endl;
-      of << funs[ki]->umax() << " " << funs[ki]->vmin() << " 0 ";
-      of << funs[ki]->umax() << " " << funs[ki]->vmax() << " 0" << std::endl;
-      of << funs[ki]->umin() << " " << funs[ki]->vmax() << " 0 ";
-      of << funs[ki]->umax() << " " << funs[ki]->vmax() << " 0" << std::endl;
-    }
-#endif
-  for (size_t ki=0; ki<funs.size(); ++ki)
-    {
-      // Check for previous identification
-      size_t kj, kh;
-      for (kj=0; kj<lindep.size(); ++kj)
-	{
-	  for (kh=0; kh<lindep[kj].size(); ++kh)
-	    if (lindep[kj][kh] == funs[ki])
-	      break;
-	  if (kh < lindep[kj].size())
-	    break;
-	}
-      if (kj < lindep.size())
-	continue;
-      
-      // Find all B-splines with support completely inside the support of
-      // this B-spline and count how many are overloaded
-      vector<LRBSpline2D*> inside;
-      inside.push_back(funs[ki]);
-      for (auto it1=funs[ki]->supportedElementBegin();
-	   it1!=funs[ki]->supportedElementEnd(); ++it1)
-	{
-	  for (auto it2=(*it1)->supportBegin(); it2!=(*it1)->supportEnd(); ++it2)
-	    {
-	      if (*it2 == funs[ki])
-		continue;
-	      if (funs[ki]->covers(*it2))
-		{
-		  // Check for overload
-		  for (kh=0; kh<funs.size(); ++kh)
-		    if ((*it2) == funs[kh])
-		      break;
-		  if (kh < funs.size())
-		    {
-		      // Check for multiplicity
-		      size_t kr;
-		      for (kr=0; kr<inside.size(); ++kr)
-			if ((*it2) == inside[kr])
-			  break;
-		      if (kr == inside.size())
-			inside.push_back(*it2);
-		    }
-		}
-	    }
-	}
-      if ((int)inside.size() >= minNmb)
-	lindep.push_back(inside);
-    }
-  
-  // Remove internal cases
-  for (size_t kr=0; kr<lindep.size(); )
-    {
-      size_t kh;
-      for (kh=0; kh<lindep.size(); ++kh)
-	{
-	  if (kh == kr)
-	    continue;
-	  size_t kv;
-	  for (kv=1; kv<lindep[kh].size(); ++kv)
-	    if (lindep[kr][0] == lindep[kh][kv])
-	      break;
-	  if (kv < lindep[kh].size())
-	    break;
-	}
-      if (kh < lindep.size())
-	lindep.erase(lindep.begin()+kr);
-      else
-	{
-	  ++kr;
-	}
-    }
-  
-#ifdef DEBUG
-  std::cout << "Number of linear dependency sources: " << lindep.size() << std::endl;
-  for (size_t kj=0; kj<lindep.size(); ++kj)
-    {
-      std::cout << lindep[kj][0]->umin() << " " << lindep[kj][0]->umax() << " ";
-      std::cout << lindep[kj][0]->vmin() << " " << lindep[kj][0]->vmax() << std::endl;
-    }
-#endif
-}
 
+}; // end anonymous namespace

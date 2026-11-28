@@ -91,6 +91,8 @@ The example programs in the trivariatemodel module are:
 - \ref mirrorAndLoft
 - \ref multiPatchSweep
 
+lrspline2D has the following examples
+- \ref refine_lrspline
 */
 
 #endif // _EXAMPLES_DOXYMAIN_H

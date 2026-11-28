@@ -37,14 +37,15 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-#include "GoTools/geometry/SplineUtils.h"
+#include "GoTools/trivariate/VolumeTools.h"
 #include <vector>
 
 namespace Go
 {
 
 //===========================================================================
-void volume_ratder(double const eder[],int idim,int ider,double gder[])
+  void VolumeTools::volume_ratder(double const eder[],int idim,
+				  int ider,double gder[])
 //===========================================================================
 {
   double w0;           /* The reciprocal of the denominator.     */

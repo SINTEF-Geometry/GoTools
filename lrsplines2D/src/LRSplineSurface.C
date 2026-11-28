@@ -58,6 +58,7 @@
 #include "GoTools/geometry/SplineCurve.h"
 #include "GoTools/geometry/SplineSurface.h"
 #include "GoTools/lrsplines2D/LRSplinePlotUtils.h" // @@ only for debug
+#include "GoTools/geometry/SplineUtils.h"
 #include "GoTools/geometry/Utils.h"
 
 //#define DEBUG
@@ -147,6 +148,9 @@ LRSplineSurface::LRSplineSurface(const SplineSurface* const surf,
     }
   }
   emap_ = construct_element_map_(mesh_, bsplines_);
+
+ for (auto it=bsplines_.begin(); it!=bsplines_.end(); ++it)
+    it->second->setNestLevel(0);
 }
 
 //==============================================================================
@@ -198,6 +202,10 @@ LRSplineSurface::LRSplineSurface(double knot_tol, bool rational,
   }
 
   emap_ = construct_element_map_(mesh_, bsplines_);
+
+  setNestLevel();
+ // for (auto it=bsplines_.begin(); it!=bsplines_.end(); ++it)
+ //    it->second->computeNestLevel();
 }
 
 //==============================================================================
@@ -262,6 +270,10 @@ LRSplineSurface::LRSplineSurface(const LRSplineSurface& rhs)
   // The ElementMap has to be generated and cannot be copied directly, since it
   // contains raw pointers.  
   emap_ = construct_element_map_(mesh_, bsplines_);
+
+  setNestLevel();
+ // for (auto it=bsplines_.begin(); it!=bsplines_.end(); ++it)
+ //    it->second->computeNestLevel();
 }
 
 //===========================================================================
@@ -381,7 +393,7 @@ void  LRSplineSurface::read(istream& is)
     int stop_break = 1;
   }
 #endif
-
+  setNestLevel();
 }
 
 //==============================================================================
@@ -389,6 +401,7 @@ void LRSplineSurface::write(ostream& os) const
 //==============================================================================
 {
   std::streamsize prev = os.precision(15);
+  //std::streamsize prev = os.precision(20);
 
   int rat = (rational_) ? 1 : 0;
   object_to_stream(os, rat);
@@ -410,6 +423,15 @@ void LRSplineSurface::write(ostream& os) const
   // NB: 'emap_' is not saved (contains raw pointers to other data).  
   // Instead, it will be regenerated the LRSplineSurface is read().
     os.precision(prev);   // Reset precision to it's previous value
+}
+
+//==============================================================================
+void LRSplineSurface::writeSpecHeader(std::ostream& os, int r, int g, int b, int d, int id) const
+//==============================================================================
+{
+  os << this->instanceType() << ' ' << MAJOR_VERSION << ' '
+     << MINOR_VERSION << " " << 5 << " " << r << " " << g << " " << b
+     << " " << d << " " << id << " \n";
 }
 
 //==============================================================================
@@ -528,6 +550,25 @@ Element2D*
 LRSplineSurface::coveringElement(double u, double v) const
 //==============================================================================
 {
+  if (curr_element_ && curr_element_->contains(u, v))
+    return curr_element_;
+
+  if (curr_element_)
+    {
+      vector<LRBSpline2D*> bsupp = curr_element_->getSupport();
+      std::set<Element2D*> supp_el;
+      for (size_t ka=0; ka<bsupp.size(); ++ka)
+	{
+	  vector<Element2D*> esupp = bsupp[ka]->supportedElements();
+	  for (size_t ka=0; ka<esupp.size(); ++ka)
+	    if (esupp[ka]->contains(u, v))
+	      {
+		curr_element_ = esupp[ka];
+		return curr_element_;
+	      }
+	}
+    }
+  
   int ucorner, vcorner;
   if (! Mesh2DUtils::identify_patch_lower_left(mesh_, u, v, ucorner, vcorner) ) 
   {
@@ -561,6 +602,7 @@ LRSplineSurface::coveringElement(double u, double v) const
   const auto el = emap_.find(key);
   assert(el != emap_.end());
 //  return *el;
+  curr_element_ = el->second.get();
   return el->second.get();
 }
 
@@ -655,6 +697,31 @@ LRSplineSurface::getBoundaryBsplines(Direction2D d, bool atstart)
     }
   return bsplines;
  }
+
+// =============================================================================
+void LRSplineSurface::getBSplinesAtOpening(Direction2D d, double val,
+					   vector<LRBSpline2D*>& bspl_lower,
+					   vector<LRBSpline2D*>& bspl_upper)
+// =============================================================================
+{
+  Direction2D d2 = (d == XFIXED) ? YFIXED : XFIXED;
+  for (BSplineMap::iterator it=basisFunctionsBeginNonconst(); 
+       it != basisFunctionsEndNonconst(); ++it)
+    {
+      int deg = it->second->degree(d);
+      int mult1 = (d == XFIXED) ? it->second->endmult_u(true) :
+	it->second->endmult_v(true);
+      double bval1 = it->second->getUnivariate(d)->min();
+      int mult2 = (d == XFIXED) ? it->second->endmult_u(false) :
+	it->second->endmult_v(false);
+      double bval2 = it->second->getUnivariate(d)->max();
+      if (mult1 == deg+1 && bval1 == val)
+	bspl_upper.push_back(it->second.get());
+      if (mult2 == deg+1 && bval2 == val)
+	bspl_lower.push_back(it->second.get());
+    }
+}
+
 
 //==============================================================================
 bool LRSplineSurface::isFullTensorProduct() const
@@ -1110,6 +1177,13 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
       }
     }
   }
+
+  // Finally, ensure that all bsplines has got a generation count.
+  // If the flag is set, no action is taken
+  //setNestLevel();
+  // for (auto bsp=bsplines_.begin(); bsp!=bsplines_.end(); ++bsp)
+  //   bsp->second->computeNestLevel();
+  
 #ifdef DEBUG
   //std::cout << "Num elements post: " << numElements() << std::endl;
   std::ofstream refsf("refine_one_sf.g2");
@@ -1134,6 +1208,42 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
     return (r1.kval < r2.kval);
   }
 
+
+//==============================================================================
+  void LRSplineSurface::setNestLevel()
+//==============================================================================
+  {
+  int max_level = 10;  // Should always be enough
+  for (int level=0; level<max_level; ++level)
+    {
+      bool finished = true;
+      for (auto bspl=bsplines_.begin(); bspl!=bsplines_.end(); ++bspl)
+	{
+	  int blevel = bspl->second->getNestLevel();
+	  if (blevel != -1)
+	    continue;  // Already set
+
+	  finished = false;
+	  vector<LRBSpline2D*> cand;
+	  bspl->second->getOverlapping(cand);
+
+	  int max_level = -1;
+	  size_t kr;
+	  for (kr=0; kr<cand.size(); ++kr)
+	    {
+	      int clevel = cand[kr]->getNestLevel();
+	      if (clevel < 0)
+		break;
+	      max_level = std::max(max_level, clevel);
+	    }
+	  if (kr < cand.size() || max_level > level-1)
+	    continue;
+	  bspl->second->setNestLevel(level);
+	}
+      if (finished)
+	break;
+    }
+  }
 
 //==============================================================================
   void LRSplineSurface::refine(const vector<Refinement2D>& refs, 
@@ -1298,6 +1408,7 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
   emap_ = construct_element_map_(mesh_, bsplines_); // reconstructing the emap once at the end
   curr_element_ = NULL;  // No valid any more
   //std::wcout << "Refinement now finished. " << std::endl;
+  
 #if 0//ndef NDEBUG
   {
     vector<LRBSpline2D*> bas_funcs;
@@ -1309,6 +1420,11 @@ void LRSplineSurface::refine(Direction2D d, double fixed_val, double start,
   }
 #endif
 
+  // Finally, ensure that all bsplines has got a generation count.
+  // If the flag is set, no action is taken
+  for (auto bsp=bsplines_.begin(); bsp!=bsplines_.end(); ++bsp)
+    bsp->second->computeNestLevel();
+  
 }
 
 //==============================================================================
@@ -1354,19 +1470,42 @@ void LRSplineSurface::to3D()
     THROW("Cannot convert a 0-degree spline to 3D.");
 
   //LRSplineUtils::insertParameterFunctions(this);
-  for (auto b = bsplines_.begin(); b != bsplines_.end(); ++b) {
-    const double x = LRSplineUtils::compute_greville(b->second->kvec(XFIXED), 
-						     mesh().knotsBegin(XFIXED));
-    const double y = LRSplineUtils::compute_greville(b->second->kvec(YFIXED), 
-						      mesh().knotsBegin(YFIXED));
-    const double z_gamma = b->second->coefTimesGamma()[0];
-    const double gamma = b->second->gamma();
-    b->second->coefTimesGamma() = Point(x*gamma, y*gamma, z_gamma);
-//    b->second->coefTimesGamma() = Point(x, y, z_gamma);
-    //wcout << b.second.coefTimesGamma() << std::endl;
-    // int dim = b->second->coefTimesGamma().size();
-    // double z = z_gamma/gamma;
-    // std::cout << "z: " << z << std::endl;
+  int max_level = 10;  // Should always be enough
+ for (int level=0; level<max_level; ++level)
+    {
+      int num_update = 0;
+      for (auto b = bsplines_.begin(); b != bsplines_.end(); ++b) {
+	int blevel = b->second->getNestLevel();
+	if (blevel != level)
+	  continue;
+	double x = LRSplineUtils::compute_greville(b->second->kvec(XFIXED), 
+							 mesh().knotsBegin(XFIXED));
+	double y = LRSplineUtils::compute_greville(b->second->kvec(YFIXED), 
+							 mesh().knotsBegin(YFIXED));
+	const double z_gamma = b->second->coefTimesGamma()[0];
+	const double gamma = b->second->gamma();
+	if (blevel > 0)
+	  {
+	    Point uv(x, y);
+	    bool OK = b->second->adaptProjCoef(uv);
+	    if (!OK)
+	      {
+		uv = Point(x,y);
+		(void)b->second->adaptProjCoef(uv);
+	      }
+	    x = uv[0];
+	    y = uv[1];
+	  }
+	b->second->coefTimesGamma() = Point(x*gamma, y*gamma, z_gamma);
+	//    b->second->coefTimesGamma() = Point(x, y, z_gamma);
+	//wcout << b.second.coefTimesGamma() << std::endl;
+	// int dim = b->second->coefTimesGamma().size();
+	// double z = z_gamma/gamma;
+	// std::cout << "z: " << z << std::endl;
+	++num_update;
+      }
+      if (num_update == 0)
+	break;
   }
   int dim = dimension();
   // std::cout << "Global dim: " << dim << std::endl;
@@ -1606,33 +1745,33 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
     elem = curr_element_;
   else
     {
-      bool found = false;
+      // bool found = false;
 
-      // Check neighbours
-      if (curr_element_)
-	{
-	  vector<LRBSpline2D*> bsupp = curr_element_->getSupport();
-	  std::set<Element2D*> supp_el;
-	  for (size_t ka=0; ka<bsupp.size(); ++ka)
-	    {
-	      vector<Element2D*> esupp = bsupp[ka]->supportedElements();
-	      supp_el.insert(esupp.begin(), esupp.end());
-	    }
-	  vector<Element2D*> supp_el2(supp_el.begin(), supp_el.end());
-	  for (size_t ka=0; ka<supp_el2.size(); ++ka)
-	    if (supp_el2[ka]->contains(u, v))
-	      {
-		elem = curr_element_ = supp_el2[ka];
-		found = true;
-		break;
-	      }
-	}
-      if (!found)
-	{
+      // // Check neighbours
+      // if (curr_element_)
+      // 	{
+      // 	  vector<LRBSpline2D*> bsupp = curr_element_->getSupport();
+      // 	  std::set<Element2D*> supp_el;
+      // 	  for (size_t ka=0; ka<bsupp.size(); ++ka)
+      // 	    {
+      // 	      vector<Element2D*> esupp = bsupp[ka]->supportedElements();
+      // 	      supp_el.insert(esupp.begin(), esupp.end());
+      // 	    }
+      // 	  vector<Element2D*> supp_el2(supp_el.begin(), supp_el.end());
+      // 	  for (size_t ka=0; ka<supp_el2.size(); ++ka)
+      // 	    if (supp_el2[ka]->contains(u, v))
+      // 	      {
+      // 		elem = curr_element_ = supp_el2[ka];
+      // 		found = true;
+      // 		break;
+      // 	      }
+      // 	}
+      // if (!found)
+      // 	{
 	  //std::cout << "Finding element for parameter value (" << u << "," << v << ")" << std::endl;
 	  elem = coveringElement(u, v);
 	  curr_element_ = (Element2D*)elem;
-	}
+	// }
     }
   return operator()(u, v, u_deriv, v_deriv, elem);
 }
@@ -1646,32 +1785,32 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
   // Check element
   if (!elem || !elem->contains(u, v))
     {
-      bool found = false;
+      // bool found = false;
 
-      // Check neighbours
-      if (elem)
-	{
-	  vector<LRBSpline2D*> bsupp = elem->getSupport();
-	  std::set<Element2D*> supp_el;
-	  for (size_t ka=0; ka<bsupp.size(); ++ka)
-	    {
-	      vector<Element2D*> esupp = bsupp[ka]->supportedElements();
-	      supp_el.insert(esupp.begin(), esupp.end());
-	    }
-	  vector<Element2D*> supp_el2(supp_el.begin(), supp_el.end());
-	  for (size_t ka=0; ka<supp_el2.size(); ++ka)
-	    if (supp_el2[ka]->contains(u, v))
-	      {
-		elem = supp_el2[ka];
-		found = true;
-		break;
-	      }
-	}
-      if (!found)
-	{
+      // // Check neighbours
+      // if (elem)
+      // 	{
+      // 	  vector<LRBSpline2D*> bsupp = elem->getSupport();
+      // 	  std::set<Element2D*> supp_el;
+      // 	  for (size_t ka=0; ka<bsupp.size(); ++ka)
+      // 	    {
+      // 	      vector<Element2D*> esupp = bsupp[ka]->supportedElements();
+      // 	      supp_el.insert(esupp.begin(), esupp.end());
+      // 	    }
+      // 	  vector<Element2D*> supp_el2(supp_el.begin(), supp_el.end());
+      // 	  for (size_t ka=0; ka<supp_el2.size(); ++ka)
+      // 	    if (supp_el2[ka]->contains(u, v))
+      // 	      {
+      // 		elem = supp_el2[ka];
+      // 		found = true;
+      // 		break;
+      // 	      }
+      // 	}
+      // if (!found)
+      // 	{
 	  //std::cout << "Finding element for parameter value (" << u << "," << v << ")" << std::endl;
 	  elem = coveringElement(u, v);
-	}
+	// }
     }
   
   curr_element_ = elem;
@@ -1707,76 +1846,91 @@ Point LRSplineSurface::operator()(double u, double v, int u_deriv, int v_deriv) 
     }
   else
     {
-      double denom_pos = 0.0;
-      double denom_der = 0.0;
-      Point nom_pos(this->dimension());
-      nom_pos.setValue(0.0);
-      Point nom_der(this->dimension());
-      nom_der.setValue(0.0);
-      for (auto b = covering_B_functions.begin(); 
-	   b != covering_B_functions.end(); ++b, ++ki) 
-	{
-	  const bool u_on_end = (u == (*b)->umax());
-	  const bool v_on_end = (v == (*b)->vmax());
+      // Rational
 
-	  // The b-function contains the coefficient.
-	  double basis_val_pos = (*b)->evalBasisFunction(u, 
-							 v, 
-							 0, 
-							 0, 
-							 u_on_end, 
-							 v_on_end);
-	  //double gamma = (*b)->gamma();
-	  double weight = (*b)->weight();
-	  Point coef = (*b)->coefTimesGamma();
-	  
-	  // This is the nominator-position.
-	  nom_pos += coef*weight*basis_val_pos;
-	  
-	  denom_pos += weight*basis_val_pos;
-	  
-	  if (u_deriv > 0 || v_deriv > 0)
+      if (u_deriv + v_deriv <= 1)
+	{
+	  double denom_pos = 0.0;
+	  double denom_der = 0.0;
+	  int dim = this->dimension();
+	  Point nom_pos(this->dimension());
+	  nom_pos.setValue(0.0);
+	  Point nom_der(this->dimension());
+	  nom_der.setValue(0.0);
+	  for (auto b = covering_B_functions.begin(); 
+	       b != covering_B_functions.end(); ++b, ++ki) 
 	    {
-	      double basis_val_der = (*b)->evalBasisFunction(u, 
+	      const bool u_on_end = (u >= (*b)->umax()-eps);
+	      const bool v_on_end = (v >= (*b)->vmax()-eps);
+
+	      // The b-function contains the coefficient.
+	      double basis_val_pos = (*b)->evalBasisFunction(u, 
 							     v, 
-							     u_deriv, 
-							     v_deriv, 
+							     0, 
+							     0, 
 							     u_on_end, 
 							     v_on_end);
+	      //double gamma = (*b)->gamma();
+	      double weight = (*b)->weight();
+	      Point coef = (*b)->coefTimesGamma();
+	  
+	      // This is the nominator-position.
+	      nom_pos += coef*weight*basis_val_pos;
+	  
+	      denom_pos += weight*basis_val_pos;
+	  
+	      if (u_deriv > 0 || v_deriv > 0)
+		{
+		  double basis_val_der = (*b)->evalBasisFunction(u, 
+								 v, 
+								 u_deriv, 
+								 v_deriv, 
+								 u_on_end, 
+								 v_on_end);
 
-	      // This is the nominator-deriv.
-	      nom_der += coef*weight*basis_val_der;
+		  // This is the nominator-deriv.
+		  nom_der += coef*weight*basis_val_der;
 	      
-	      denom_der += weight*basis_val_der;
-	    }
+		  denom_der += weight*basis_val_der;
+		}
 
 #ifndef NDEBUG
-	  if (u_deriv > 0 || v_deriv > 0)
-	    {
-	      ;//MESSAGE("Do not think that rational derivs are supported yet.");
-	      //	      denom = 1.0;
-	    }
-	  //	  std::cout << "denom: " << denom << std::endl;
-	  // if (rat_den == 0.0)
-	  //   rat_den = 1.0;
+	      if (u_deriv > 0 || v_deriv > 0)
+		{
+		  ;//MESSAGE("Do not think that rational derivs are supported yet.");
+		  //	      denom = 1.0;
+		}
+	      //	  std::cout << "denom: " << denom << std::endl;
+	      // if (rat_den == 0.0)
+	      //   rat_den = 1.0;
 #endif
 	  
-	}
+	    }
 
-      if (u_deriv == 0 && v_deriv == 0)
-	{
-	  result = nom_pos/denom_pos;
-	}
-      else if (u_deriv + v_deriv == 1)
-	{
-	  result = (nom_der*denom_pos - denom_der*nom_pos)/(denom_pos*denom_pos);
+	  if (u_deriv == 0 && v_deriv == 0)
+	    {
+	      result = nom_pos/denom_pos;
+	    }
+	  else if (u_deriv + v_deriv == 1)
+	    {
+	      result = (nom_der*denom_pos - denom_der*nom_pos)/(denom_pos*denom_pos);
+	    }
 	}
       else
 	{
-	  std::cout << "Not supported." << std::endl;
+	  int deriv = (u_deriv+1)*(v_deriv+1); 
+	  int totpts = (deriv + 1)*(deriv + 2)/2;
+	  vector<Point> pts(totpts);
+	  point(pts, u, v, deriv);
+
+	  int nder = u_deriv + v_deriv;
+	  int ix = 0;
+	  for (int ki=1; ki<=nder; ++ki)
+	    ix += ki;
+	  ix += v_deriv;
+	  result = pts[ix];
 	}
     }
-
   return result;
 }
 
@@ -2053,30 +2207,30 @@ const RectDomain& LRSplineSurface::parameterDomain() const
     //pt = operator()(upar, vpar, 0, 0, curr_element_);
     if (!curr_element_ || !curr_element_->contains(upar, vpar))
       {
-      bool found = false;
+      // bool found = false;
 
-      // Check neighbours
-      if (curr_element_)
-	{
-	  vector<LRBSpline2D*> bsupp = curr_element_->getSupport();
-	  std::set<Element2D*> supp_el;
-	  for (size_t ka=0; ka<bsupp.size(); ++ka)
-	    {
-	      vector<Element2D*> esupp = bsupp[ka]->supportedElements();
-	      for (size_t ka=0; ka<esupp.size(); ++ka)
-		if (esupp[ka]->contains(upar, vpar))
-		  {
-		    curr_element_ = esupp[ka];
-		    found = true;
-		    break;
-		  }
-	    }
-	}
-      if (!found)
-	{
+      // // Check neighbours
+      // if (curr_element_)
+      // 	{
+      // 	  vector<LRBSpline2D*> bsupp = curr_element_->getSupport();
+      // 	  std::set<Element2D*> supp_el;
+      // 	  for (size_t ka=0; ka<bsupp.size(); ++ka)
+      // 	    {
+      // 	      vector<Element2D*> esupp = bsupp[ka]->supportedElements();
+      // 	      for (size_t ka=0; ka<esupp.size(); ++ka)
+      // 		if (esupp[ka]->contains(upar, vpar))
+      // 		  {
+      // 		    curr_element_ = esupp[ka];
+      // 		    found = true;
+      // 		    break;
+      // 		  }
+      // 	    }
+      // 	}
+      // if (!found)
+      // 	{
 	  //std::cout << "Finding element for parameter value (" << u << "," << v << ")" << std::endl;
 	  curr_element_ = coveringElement(upar, vpar);
-	}
+	// }
       }
 
     if (rational_)
@@ -2189,16 +2343,6 @@ void LRSplineSurface::point(Point& pt, double upar, double vpar,
     int dim = dimension();
     points.reserve(num_u*num_v*dim);
 
-    // // Make intermediate tensor product spline surface to speed up the
-    // // grid evaluation
-    // shared_ptr<LRSplineSurface> tmp = shared_ptr<LRSplineSurface>(this->clone());;
-    // shared_ptr<SplineSurface> tpsf =
-    //   shared_ptr<SplineSurface>(tmp->asSplineSurface());
-
-    // vector<double> param_u;
-    // vector<double> param_v;
-    // tpsf->gridEvaluator(num_u, num_v, points, param_u, param_v,
-    // 			umin, umax, vmin, vmax);
   // Construct mesh of element pointers
     vector<Element2D*> elements;
     constructElementMesh(elements);
@@ -2346,32 +2490,32 @@ double LRSplineSurface::endparam_v() const
   //   elem = coveringElement(upar, vpar);
   if (!elem || !elem->contains(upar, vpar))
     {
-      bool found = false;
+      // bool found = false;
 
-      // Check neighbours
-      if (elem)
-	{
-	  vector<LRBSpline2D*> bsupp = elem->getSupport();
-	  std::set<Element2D*> supp_el;
-	  for (size_t ka=0; ka<bsupp.size(); ++ka)
-	    {
-	      vector<Element2D*> esupp = bsupp[ka]->supportedElements();
-	      supp_el.insert(esupp.begin(), esupp.end());
-	    }
-	  vector<Element2D*> supp_el2(supp_el.begin(), supp_el.end());
-	  for (size_t ka=0; ka<supp_el2.size(); ++ka)
-	    if (supp_el2[ka]->contains(upar, vpar))
-	      {
-		elem = supp_el2[ka];
-		found = true;
-		break;
-	      }
-	}
-      if (!found)
-	{
+      // // Check neighbours
+      // if (elem)
+      // 	{
+      // 	  vector<LRBSpline2D*> bsupp = elem->getSupport();
+      // 	  std::set<Element2D*> supp_el;
+      // 	  for (size_t ka=0; ka<bsupp.size(); ++ka)
+      // 	    {
+      // 	      vector<Element2D*> esupp = bsupp[ka]->supportedElements();
+      // 	      supp_el.insert(esupp.begin(), esupp.end());
+      // 	    }
+      // 	  vector<Element2D*> supp_el2(supp_el.begin(), supp_el.end());
+      // 	  for (size_t ka=0; ka<supp_el2.size(); ++ka)
+      // 	    if (supp_el2[ka]->contains(upar, vpar))
+      // 	      {
+      // 		elem = supp_el2[ka];
+      // 		found = true;
+      // 		break;
+      // 	      }
+      // 	}
+      // if (!found)
+      // 	{
 	  //std::cout << "Finding element for parameter value (" << u << "," << v << ")" << std::endl;
 	  elem = coveringElement(upar, vpar);
-	}
+	// }
     }
   
   curr_element_ = elem;
@@ -2384,29 +2528,42 @@ double LRSplineSurface::endparam_v() const
   // const bool u_on_end = (upar >= mesh_.maxParam(XFIXED)-eps); //(u == (*b)->umax());
   // const bool v_on_end = (vpar >= mesh_.maxParam(YFIXED)-eps); // (v == (*b)->vmax());
 
-  for (size_t kr=0; kr<covering_B_functions.size(); ++kr)
+  if (!rational_)
     {
-      covering_B_functions[kr]->evalder_add(upar, vpar, derivs, &pts[0], 
-					    u_from_right, v_from_right);
-      // covering_B_functions[kr]->evalder(upar, vpar, derivs, &tmp[0], 
-      // 					u_from_right, v_from_right);
-      // for (size_t kh=0; kh<pts.size(); ++kh)
-      // 	pts[kh] += tmp[kh];
+      for (size_t kr=0; kr<covering_B_functions.size(); ++kr)
+	{
+	  covering_B_functions[kr]->evalder_add(upar, vpar, derivs, &pts[0], 
+						u_from_right, v_from_right);
+	  // covering_B_functions[kr]->evalder(upar, vpar, derivs, &tmp[0], 
+	  // 					u_from_right, v_from_right);
+	  // for (size_t kh=0; kh<pts.size(); ++kh)
+	  // 	pts[kh] += tmp[kh];
+	}
     }
-  // This is not the most efficient approach, should be faster to
-  // evaluate basis functions once. Only a first implementation.
-  // int cntr = 0;
-  // for (int kj = 0; kj < derivs + 1; ++kj)
-  //   {
-  //     for (int ki = 0; ki < kj + 1; ++ki, ++cntr)
-  // 	{
-  //   	  pts2[cntr] = operator()(upar, vpar, kj-ki, ki, elem);
-  // 	}
-  //   }
-  // if (pts2[0].dist(pts[0]) > 5)
-  //   {
-  //     int stop_break = 1;
-  //   }
+  else
+    {
+      vector<Point> tmppts(totpts);
+      for (int ki=0; ki<totpts; ++ki)
+	{
+	  tmppts[ki].resize(dim+1);
+	  tmppts[ki].setValue(0.0);
+	}
+      for (size_t kr=0; kr<covering_B_functions.size(); ++kr)
+	covering_B_functions[kr]->evalder_add(upar, vpar, derivs, &tmppts[0], 
+					      u_from_right, v_from_right);
+      vector<double> tmpder(tmppts.size()*(dim+1));
+      vector<double> tmpder2(tmppts.size()*(dim+1));
+      for (size_t kr=0; kr<tmppts.size(); ++kr)
+	{
+	  for (int ki=0; ki<=dim; ++ki)
+	    tmpder[kr*(dim+1)+ki] = tmppts[kr][ki];
+	}
+      SplineUtils::surface_ratder(&tmpder[0], dim, derivs, &tmpder2[0]);
+      for (int ki=0; ki<totpts; ++ki)
+	for (int kj=0; kj<dim; ++kj)
+	  pts[ki][kj] = tmpder2[ki*dim+kj];
+    }
+
   }
 
   //===========================================================================
@@ -2583,7 +2740,7 @@ double LRSplineSurface::endparam_v() const
 	 for (size_t ki = 0; ki < refs.size(); ++ki)
 	   {
 #ifndef NDEBUG
-	     MESSAGE("ki = " << ki << "\n");
+	     //MESSAGE("ki = " << ki << "\n");
 #endif
 	     sf->refine(refs[ki], true); // Second argument is 'true', which means that the mult is set	     
 	                                 // to refs[ki].mult = deg+1.
@@ -2629,35 +2786,7 @@ double LRSplineSurface::endparam_v() const
      
     return surf;
   }
-#if 0
-  //===========================================================================
-  void LRSplineSurface::refineBasisFunction(int index)
-  //===========================================================================
-  {
-    MESSAGE("LRSplineSurface::refineBasisFunction() not implemented yet");
-  }
 
-  //===========================================================================
-  void LRSplineSurface::refineBasisFunction(const std::vector<int> &indices)
-  //===========================================================================
-  {
-    MESSAGE("LRSplineSurface::refineBasisFunction() not implemented yet");
-  }
-
-  //===========================================================================
-  void LRSplineSurface::refineElement(int index)
-  //===========================================================================
-  {
-    MESSAGE("LRSplineSurface::refineElement() not implemented yet");
-  }
-
-  //===========================================================================
-  void LRSplineSurface::refineElement(const std::vector<int> &indices)
-  //===========================================================================
-  {
-    MESSAGE("LRSplineSurface::refineElement() not implemented yet");
-  }
-#endif
   //===========================================================================
   vector<shared_ptr<ParamSurface> >
     LRSplineSurface::subSurfaces(double from_upar, double from_vpar,
@@ -2977,6 +3106,8 @@ double LRSplineSurface::endparam_v() const
     // First the mesh.
     mesh_.swapParameterDirection();
 
+    std::swap(bsplinesuni1_, bsplinesuni2_);
+
     // We then update all basis functions in bsplines_ with the
     // reversed domain. It is only the knot indices which need
     // updating.
@@ -3033,7 +3164,22 @@ double LRSplineSurface::endparam_v() const
     mesh_.reverseParameterDirection(dir_is_u);
     MESSAGE("Done reversing the mesh dir!");
 
-    // We then update all basis functions in bsplines_ with the
+    if (dir_is_u)
+      {
+       for (size_t ki=0; ki<bsplinesuni1_.size(); ++ki)
+         bsplinesuni1_[ki]->reverseParameterDirection();
+       for (size_t ki=0; ki<bsplinesuni1_.size()/2; ++ki)
+         std::swap(bsplinesuni1_[ki],bsplinesuni1_[bsplinesuni1_.size()-ki-1]);
+      }
+    else
+      {
+       for (size_t ki=0; ki<bsplinesuni2_.size(); ++ki)
+         bsplinesuni2_[ki]->reverseParameterDirection();
+       for (size_t ki=0; ki<bsplinesuni2_.size()/2; ++ki)
+         std::swap(bsplinesuni2_[ki],bsplinesuni2_[bsplinesuni2_.size()-ki-1]);
+      }
+       
+     // We then update all basis functions in bsplines_ with the
     // reversed domain. It is only the knot indices which need
     // updating.
     // Since the key is const we must recreate the map.
@@ -3043,7 +3189,6 @@ double LRSplineSurface::endparam_v() const
       {
 	unique_ptr<LRBSpline2D> bas_func;
 	std::swap(bas_func, iter->second);
-	bas_func->reverseParameterDirection(dir_is_u);
 
 	// We create the new key.
 	BSKey bs_key = iter->first;
@@ -3368,6 +3513,28 @@ double LRSplineSurface::endparam_v() const
 
     return;
   }
+
+//==============================================================================
+void LRSplineSurface::fetchEdgeCorners(int edge_num, double& u1, double& v1, double& u2,
+				       double& v2) const
+//==============================================================================
+{
+  // Edges are numbered: 0=left, 1=right, 2=lower, 3=upper
+  if (edge_num <= 1)
+    u1 = u2 = (edge_num == 0) ? startparam_u() : endparam_u();
+  else
+    {
+      u1 = startparam_u();
+      u2 = endparam_u();
+    }
+  if (edge_num >= 2)
+    v1 = v2 = (edge_num == 2) ? startparam_v() : endparam_v();
+  else
+    {
+      v1 = startparam_v();
+      v2 = endparam_v();
+    }
+}
 
 //===========================================================================
 SplineCurve*

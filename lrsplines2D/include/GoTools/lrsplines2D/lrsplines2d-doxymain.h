@@ -66,6 +66,8 @@ An LR spline surface, \link Go::LRSplineSurface \endlink, is a piecewise polynom
 refinements starting from a tensor-product mesh. LR spline surfaces are algorithmically defined throughout the refinement process of the mesh.
 An LR spline surface is defined as
 
+F(u,v) = \f$ \sum \f$ <SUB>i=1</SUB><SUP>L</SUP> P<SUB>i</SUB> s<SUB>i</SUB> R<SUB>i,p<SUB>1</SUB>,p<SUB>2</SUB></SUB> (u,v) 
+
 \f[ F(u,v) = \sum _{i=1}^L P_i s_i R_{i, p_1, p_2} (u,v) \f]
 
 where P<SUB>i</SUB>, i=1, ... ,L are the surface coefficients, 

@@ -40,6 +40,7 @@
 #include "GoTools/lrsplines2D/LRSplineSurface.h"
 #include "GoTools/lrsplines2D/LRSurfApprox.h"
 #include "GoTools/lrsplines2D/LRApproxApp.h"
+#include "GoTools/lrsplines2D/DefineRefs2D.h"
 #include "GoTools/geometry/PointCloud.h"
 #include "GoTools/geometry/ObjectHeader.h"
 #include "GoTools/utils/BoundingBox.h"
@@ -143,7 +144,7 @@ int main(int argc, char *argv[])
   approx->setUseMBA(true);
 
   // Several approaches exists in refinement. Set strategy
-  int refcat = 1;  // Full span
+  RefineStrategy refcat = fullSpan;
   int alter = 0;   // Do not change strategy during approximation
   int threshold = 0;  // Do not limit the collection of new knot line segments
   // from the ones defined by the choosen strategy

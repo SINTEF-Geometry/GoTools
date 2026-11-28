@@ -42,9 +42,12 @@
 #include "GoTools/lrsplines3D/LRSpline3DUtils.h"
 #include "GoTools/lrsplines2D/BSplineUniUtils.h"
 #include "GoTools/lrsplines2D/LRSplineUtils.h"
+#include "GoTools/trivariate/VolumeTools.h";
 #include <algorithm>
 #include <iostream>
 #include <fstream>
+
+#define DEBUG
 
 using std::vector;
 using std::unique_ptr;
@@ -137,7 +140,109 @@ LRSplineVolume::LRSplineVolume(SplineVolume *vol, double knot_tol)
   }
 
   emap_ = construct_element_map_(mesh_, bsplines_);
+  setNestLevel();
 }
+
+//==============================================================================
+  LRSplineVolume::LRSplineVolume(Mesh3D& mesh,
+				 std::vector<std::unique_ptr<BSplineUniLR> >& uni1,
+				 std::vector<std::unique_ptr<BSplineUniLR> >& uni2,
+				 std::vector<std::unique_ptr<BSplineUniLR> >& uni3,
+				 std::vector<std::unique_ptr<LRBSpline3D> >& bspl,
+				 bool rational, double knot_tol)
+    : rational_(rational), knot_tol_(knot_tol)
+//==============================================================================
+  {
+    //std::cout << "Define swept volume" << std::endl;
+    mesh_.swap(mesh);
+
+    bsplinesuni1_.resize(uni1.size());
+    size_t ki;
+    for (ki=0; ki<uni1.size(); ++ki)
+      {
+	unique_ptr<BSplineUniLR> b(new BSplineUniLR(*uni1[ki]));
+
+	// Update mesh pointer
+	b->setMesh(&mesh_);
+	bsplinesuni1_[ki] = std::move(b);
+      }
+  
+    bsplinesuni2_.resize(uni2.size());
+    for (ki=0; ki<uni2.size(); ++ki)
+      {
+	unique_ptr<BSplineUniLR> b(new BSplineUniLR(*uni2[ki]));
+
+	// Update mesh pointer
+	b->setMesh(&mesh_);
+	bsplinesuni2_[ki] = std::move(b);
+      }
+
+    bsplinesuni3_.resize(uni3.size());
+    for (ki=0; ki<uni3.size(); ++ki)
+      {
+	unique_ptr<BSplineUniLR> b(new BSplineUniLR(*uni3[ki]));
+
+	// Update mesh pointer
+	b->setMesh(&mesh_);
+	bsplinesuni3_[ki] = std::move(b);
+      }
+
+    // Update LR B-splines
+    int left1 = 0, left2 = 0, left3 = 0;
+    for (ki=0; ki<bspl.size(); ++ki)
+      {
+        //unique_ptr<LRBSpline3D> b(new LRBSpline3D(*bspl[ki]));
+ 
+	const BSplineUniLR *uni_1 = bspl[ki]->getUnivariate(XDIR);
+	bool found1 = BSplineUniUtils::identify_bsplineuni(uni_1, bsplinesuni1_, left1);
+	if (!found1)
+	  THROW("Univariate B-spline not found");
+	bspl[ki]->setUnivariate(XDIR, bsplinesuni1_[left1].get());
+
+	const BSplineUniLR *uni_2 = bspl[ki]->getUnivariate(YDIR);
+	bool found2 = BSplineUniUtils::identify_bsplineuni(uni_2, bsplinesuni2_, left2);
+	if (!found2)
+	  THROW("Univariate B-spline not found");
+	bspl[ki]->setUnivariate(YDIR, bsplinesuni2_[left2].get());
+
+	const BSplineUniLR *uni_3 = bspl[ki]->getUnivariate(ZDIR);
+	bool found3 = BSplineUniUtils::identify_bsplineuni(uni_3, bsplinesuni3_, left3);
+	if (!found3)
+	  THROW("Univariate B-spline not found");
+	bspl[ki]->setUnivariate(ZDIR, bsplinesuni3_[left3].get());
+
+       LRSplineVolume::BSKey bs_key = generate_key(*bspl[ki], mesh_);
+        bsplines_.insert(std::pair<LRSplineVolume::BSKey, unique_ptr<LRBSpline3D> >(bs_key, std::move(bspl[ki])));
+      }
+
+    std::cout << "Construct element map" << std::endl;
+    // The ElementMap has to be generated and cannot be copied directly, since it
+    // contains raw pointers.
+    emap_ = construct_element_map_(mesh_, bsplines_);
+   // std::swap(bsplinesuni1_, uni1);
+   //  std::swap(bsplinesuni2_, uni2);
+   //  std::swap(bsplinesuni3_, uni3);
+
+   //  for (size_t ki=0; ki<bspl.size(); ++ki)
+   //    {
+   // 	bspl[ki]->setMesh(&mesh_);
+   // 	BSKey key = generate_key(*bspl[ki], mesh_);
+   // 	bsplines_.insert(std::pair<LRSplineVolume::BSKey, unique_ptr<LRBSpline3D> >(key,std::move(bspl[ki])));
+   //    }
+
+   //  // Constructing element map
+   //  emap_ = construct_element_map_(mesh_, bsplines_);
+
+   //  auto it = bsplines_.begin();
+   //  while (it != bsplines_.end())
+   //    {
+   // 	it->second->setMesh(&mesh_);
+   // 	++it;
+   //    }
+    
+    curr_element_ = NULL;
+    setNestLevel();
+  }
 
   // Copy constructor
 //==============================================================================
@@ -223,6 +328,8 @@ LRSplineVolume::LRSplineVolume(SplineVolume *vol, double knot_tol)
     // The ElementMap has to be generated and cannot be copied directly, since it
     // contains raw pointers.
     emap_ = construct_element_map_(mesh_, bsplines_);
+
+  setNestLevel();
 }
 
 //==============================================================================
@@ -287,6 +394,7 @@ LRSplineVolume::LRSplineVolume(SplineVolume *vol, double knot_tol)
     int stop_break = 1;
   }
 #endif
+  setNestLevel();
 }
 
 //==============================================================================
@@ -539,12 +647,39 @@ const LRSplineVolume& LRSplineVolume::operator= (const LRSplineVolume& other)
 
   const vector<LRBSpline3D*>& covering_B_functions = elem->getSupport();
 
-  for (size_t kr=0; kr<covering_B_functions.size(); ++kr)
+  if (!rational_)
     {
-      covering_B_functions[kr]->evalder_add(upar, vpar, wpar, derivs, &pts[0], 
-					    u_from_right, v_from_right,
-					    w_from_right);
+      for (size_t kr=0; kr<covering_B_functions.size(); ++kr)
+	{
+	  covering_B_functions[kr]->evalder_add(upar, vpar, wpar, derivs, &pts[0], 
+						u_from_right, v_from_right,
+						w_from_right);
+	}
     }
+  else
+    {
+      vector<Point> tmppts(totpts);
+      for (int ki=0; ki<totpts; ++ki)
+	{
+	  tmppts[ki].resize(dim+1);
+	  tmppts[ki].setValue(0.0);
+	}
+      for (size_t kr=0; kr<covering_B_functions.size(); ++kr)
+	covering_B_functions[kr]->evalder_add(upar, vpar, wpar, derivs,
+					      &tmppts[0], u_from_right,
+					      v_from_right, w_from_right);
+      vector<double> tmpder(tmppts.size()*(dim+1));
+      vector<double> tmpder2(tmppts.size()*(dim+1));
+      for (size_t kr=0; kr<tmppts.size(); ++kr)
+	{
+	  for (int ki=0; ki<=dim; ++ki)
+	    tmpder[kr*(dim+1)+ki] = tmppts[kr][ki];
+	}
+      VolumeTools::volume_ratder(&tmpder[0], dim, derivs, &tmpder2[0]);
+      for (int ki=0; ki<totpts; ++ki)
+	for (int kj=0; kj<dim; ++kj)
+	  pts[ki][kj] = tmpder2[ki*dim+kj];
+        }
   }
 
 
@@ -1065,20 +1200,6 @@ DirectionCone LRSplineVolume::tangentCone(int pardir) const
    THROW("");
 }
 
-// //==============================================================================
-//      void LRSplineVolume::closestPoint(const Point& pt,
-// 			      double&        clo_u,
-// 			      double&        clo_v, 
-// 			      double&        clo_w, 
-// 			      Point&         clo_pt,
-// 			      double&        clo_dist,
-// 			      double         epsilon,
-// 			      double   *seed) const
-// //==============================================================================
-// {
-//    MESSAGE("LRSplineVolume:: Not implemented yet.");
-//    THROW("");
-// }
 
 #if 0
 //==============================================================================
@@ -1556,24 +1677,16 @@ Point LRSplineVolume::operator()(double u, double v, double w, int u_deriv, int 
   // loop over LR B-spline functions
   int ki=0;
   int nmb_b = (int)covering_B_functions.size();
-  double denom = (rational_) ? 0.0 : 1.0;
-  double denom_pos = 0.0;
-  double denom_der = 0.0;
-  Point nom_pos(this->dimension());
-  nom_pos.setValue(0.0);
-  Point nom_der(this->dimension());
-  nom_der.setValue(0.0);
-  vector<double> basis_vals((u_deriv+1)*(v_deriv+1)*(w_deriv+1), 0.0); // To be used for rational cases, needed for derivs.
   double eps = 1.0e-12;
-  const bool u_on_end = (u >= mesh_.maxParam(XDIR)-eps); //(u == (*b)->umax());
-  const bool v_on_end = (v >= mesh_.maxParam(YDIR)-eps); // (v == (*b)->vmax());
-  const bool w_on_end = (w >= mesh_.maxParam(ZDIR)-eps); 
-  for (auto b = covering_B_functions.begin(); 
-       b != covering_B_functions.end(); ++b, ++ki) 
+  if (!rational_)
     {
-      // The b-function contains the coefficient.
-      if (!rational_)
+      for (auto b = covering_B_functions.begin(); 
+	   b != covering_B_functions.end(); ++b, ++ki) 
 	{
+	  // The b-function contains the coefficient.
+	  const bool u_on_end = (u >= (*b)->umax()-eps);
+	  const bool v_on_end = (v >= (*b)->vmax()-eps);
+	  const bool w_on_end = (v >= (*b)->wmax()-eps);
 	  result += (*b)->eval(u, 
 			       v, 
 			       w,
@@ -1584,73 +1697,97 @@ Point LRSplineVolume::operator()(double u, double v, double w, int u_deriv, int 
 			       v_on_end, 
 			       w_on_end);
 	}
-      else
+    }
+  else
+    {
+      // Rational
+      if (u_deriv + v_deriv + w_deriv <= 1)
 	{
-	  
-//	  for (size_t ki = 0; ki < 
-	  double basis_val_pos = (*b)->evalBasisFunction(u, 
-							 v, 
-							 w,
-							 0, 
-							 0, 
-							 0,
-							 u_on_end, 
-							 v_on_end,
-							 w_on_end);
-	  double gamma = (*b)->gamma();
-	  double weight = (*b)->weight();
-	  Point coef = (*b)->coefTimesGamma();
+	  double denom = 0.0;
+	  double denom_pos = 0.0;
+	  double denom_der = 0.0;
+	  Point nom_pos(this->dimension());
+	  nom_pos.setValue(0.0);
+	  Point nom_der(this->dimension());
+	  nom_der.setValue(0.0);
 
-	  // This is the nominator-position.
-	  nom_pos += coef*weight*basis_val_pos;
-
-	  denom_pos += weight*basis_val_pos;
-
-	  if (u_deriv > 0 || v_deriv > 0 || w_deriv > 0)
+	  for (auto b = covering_B_functions.begin(); 
+	       b != covering_B_functions.end(); ++b, ++ki) 
 	    {
-	      double basis_val_der = (*b)->evalBasisFunction(u, 
+	      // The b-function contains the coefficient.
+	      const bool u_on_end = (u >= (*b)->umax()-eps);
+	      const bool v_on_end = (v >= (*b)->vmax()-eps);
+	      const bool w_on_end = (w >= (*b)->wmax()-eps);
+	  
+	      double basis_val_pos = (*b)->evalBasisFunction(u, 
 							     v, 
-							     w, 
-							     u_deriv, 
-							     v_deriv, 
-							     w_deriv, 
+							     w,
+							     0, 
+							     0, 
+							     0,
 							     u_on_end, 
 							     v_on_end,
 							     w_on_end);
+	      double gamma = (*b)->gamma();
+	      double weight = (*b)->weight();
+	      Point coef = (*b)->coefTimesGamma();
 
-	      // This is the nominator-deriv.
-	      nom_der += coef*weight*basis_val_der;
+	      // This is the nominator-position.
+	      nom_pos += coef*weight*basis_val_pos;
 
-	      denom_der += weight*basis_val_der;
+	      denom_pos += weight*basis_val_pos;
+
+	      if (u_deriv > 0 || v_deriv > 0 || w_deriv > 0)
+		{
+		  double basis_val_der = (*b)->evalBasisFunction(u, 
+								 v, 
+								 w, 
+								 u_deriv, 
+								 v_deriv, 
+								 w_deriv, 
+								 u_on_end, 
+								 v_on_end,
+								 w_on_end);
+
+		  // This is the nominator-deriv.
+		  nom_der += coef*weight*basis_val_der;
+
+		  denom_der += weight*basis_val_der;
+		}
 	    }
-
-#ifndef NDEBUG
-	  if (u_deriv > 0 || v_deriv > 0 || w_deriv > 0)
+	  if (u_deriv == 0 && v_deriv == 0 && w_deriv == 0)
 	    {
-	      ;//MESSAGE("Do not think that rational derivs are supported yet.");
-//	      denom = 1.0;
+	      result = nom_pos/denom_pos;
 	    }
-//	  std::cout << "denom: " << denom << std::endl;
-	  // if (rat_den == 0.0)
-	  //   rat_den = 1.0;
-#endif
-
-	}
-    }
-
-  if (rational_)
-    {
-      if (u_deriv == 0 && v_deriv == 0 && w_deriv == 0)
-	{
-	  result = nom_pos/denom_pos;
-	}
-      else if (u_deriv + v_deriv + w_deriv == 1)
-	{
-	  result = (nom_der*denom_pos - denom_der*nom_pos)/(denom_pos*denom_pos);
+	  else if (u_deriv + v_deriv + w_deriv == 1)
+	    {
+	      result = (nom_der*denom_pos - denom_der*nom_pos)/(denom_pos*denom_pos);
+	    }
 	}
       else
 	{
-	  std::cout << "Not supported." << std::endl;
+	  int deriv = u_deriv + v_deriv + w_deriv;
+	  int totpts = (deriv + 1)*(deriv + 2)*(deriv + 3)/6;
+	  vector<Point> pts(totpts);
+	  point(pts, u, v, w, deriv);
+
+	  int ix = deriv*(deriv+1)*(deriv+2)/6;
+	  int iu, iv, k1;
+	  for (iu=deriv, k1=0; iu>=0; --iu, ++k1)
+	    {
+	      ix += k1;
+	      if (iu == u_deriv)
+		break;
+	    }
+	  for (iv=deriv-iu; iv>=0; --iv, ++ix)
+	    if (iv == v_deriv)
+	      break;
+
+#ifdef DEBUG
+	  std::cout << "u_deriv = " << u_deriv << ", v_deriv = " << v_deriv << ", w_deriv = " << w_deriv << std::endl;
+	  std::cout << "ix = " << ix << std::endl;
+#endif
+	  result = pts[ix];
 	}
     }
 
@@ -1814,53 +1951,6 @@ Point LRSplineVolume::operator()(double u, double v, double w, int u_deriv, int 
     return result;
 }
 
-#if 0
-//==============================================================================
-  void LRSplineVolume::computeBasis (double param_u, double param_v, double param_w,
-				     BasisPtsSf& result, int iEl ) const
-//==============================================================================
-{
-   MESSAGE("LRSplineVolume:: Not implemented yet.");
-   throw;
-}
-
-//==============================================================================
-  void LRSplineVolume::computeBasis (double param_u, double param_v, double param_w,
-				     BasisDerivsSf& result, int iEl ) const
-//==============================================================================
-{
-  MESSAGE("LRSplineVolume:: Not implemented yet.");
-  throw;
-}
-
-//==============================================================================
-  void LRSplineVolume::computeBasis (double param_u, double param_v, double param_w,
-				     BasisDerivsSf2& result, int iEl ) const
-//==============================================================================
-{
-  MESSAGE("LRSplineVolume:: Not implemented yet.");
-  throw;
-}
-
-//==============================================================================
-  void LRSplineVolume::computeBasis (double param_u, double param_v, double param_w,
-				     std::vector<std::vector<double> >& result,
-				     int derivs,
-				     int iEl ) const
-//==============================================================================
-{
-  MESSAGE("LRSplineVolume:: Not implemented yet.");
-  throw;
-}
-
-//==============================================================================
-  int LRSplineVolume::getElementContaining(double u, double v, double w) const
-//==============================================================================
-{
-  MESSAGE("LRSplineVolume:: Not implemented yet.");
-  throw;
-}
-#endif
 
 //==============================================================================
 Go::Element3D* LRSplineVolume::coveringElement(double u, double v, double w) const
@@ -2117,6 +2207,42 @@ void LRSplineVolume::evalGrid(int num_u, int num_v, int num_w,
             LRSpline3DUtils::all_meshlines_uniform(YDIR, mesh_) &&
             LRSpline3DUtils::all_meshlines_uniform(ZDIR, mesh_));
 }
+
+//==============================================================================
+  void LRSplineVolume::setNestLevel()
+//==============================================================================
+  {
+  int max_level = 10;  // Should always be enough
+  for (int level=0; level<max_level; ++level)
+    {
+      bool finished = true;
+      for (auto bspl=bsplines_.begin(); bspl!=bsplines_.end(); ++bspl)
+	{
+	  int blevel = bspl->second->getNestLevel();
+	  if (blevel != -1)
+	    continue;  // Already set
+
+	  finished = false;
+	  vector<LRBSpline3D*> cand;
+	  bspl->second->getOverlapping(cand);
+
+	  int max_level = -1;
+	  size_t kr;
+	  for (kr=0; kr<cand.size(); ++kr)
+	    {
+	      int clevel = cand[kr]->getNestLevel();
+	      if (clevel < 0)
+		break;
+	      max_level = std::max(max_level, clevel);
+	    }
+	  if (kr < cand.size() || max_level > level-1)
+	    continue;
+	  bspl->second->setNestLevel(level);
+	}
+      if (finished)
+	break;
+    }
+  }
 
 //==============================================================================
   void LRSplineVolume::refine(Direction3D d, double fixed_val,
@@ -2460,6 +2586,11 @@ void LRSplineVolume::evalGrid(int num_u, int num_v, int num_w,
   //   }
 
   curr_element_ = NULL;  // TESTING
+
+  // Finally, ensure that all bsplines has got a generation count.
+  // If the flag is set, no action is taken
+  for (auto bsp=bsplines_.begin(); bsp!=bsplines_.end(); ++bsp)
+    bsp->second->computeNestLevel();
 }
 
 

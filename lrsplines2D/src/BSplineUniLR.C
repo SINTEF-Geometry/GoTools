@@ -172,6 +172,10 @@ double dB(int deg, double t, const int* knot_ix, const double* kvals, bool at_en
   //static double thread_local tmp[MAX_DEGREE+2];
   double tmp[MAX_DEGREE+8]; // Assumes maximum number of derivatives equal to 3
 
+  // Initialze to zero
+  for (int ka=0; ka<=nder; ++ka)
+    der[ka] = 0.0;
+  
   // Adjust derivative if too large
   nder = min(nder, deg);
 

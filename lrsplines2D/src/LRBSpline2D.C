@@ -47,8 +47,12 @@
 #include "GoTools/utils/StreamUtils.h"
 #include "GoTools/geometry/BsplineBasis.h"
 #include "GoTools/geometry/SplineUtils.h"
+#include "sislP.h"
+#include <set>
+#include <algorithm>
 
 //#define DEBUG
+//#define DEBUG_PROJ
 
 // The following is a workaround since 'thread_local' is not well supported by compilers yet
 #if defined(__GNUC__)
@@ -93,7 +97,9 @@ LRBSpline2D::LRBSpline2D(const LRBSpline2D& rhs)
   rational_ = rhs.rational_;
   // don't copy the support
   weight_ = rhs.weight_;
+  nest_level_ = rhs.nest_level_; // To be computed?
   overload_ = rhs.overload_;
+  visited_ = rhs.visited_;
 }
 
 //==============================================================================
@@ -179,8 +185,10 @@ void LRBSpline2D::write(ostream& os) const
   bspline_v_ = new BSplineUniLR();
   bspline_v_->read(is);
 
+  nest_level_ = -1;
   coef_fixed_ = 0;
   overload_ = false;
+  visited_ = false;
 }
 
 
@@ -236,8 +244,10 @@ void LRBSpline2D::write(ostream& os) const
   bspline_v_ = bsplineuni_v[left2].get();
   bspline_v_->incrCount();
   
+  nest_level_ = -1;
   coef_fixed_ = 0;
   overload_ = false;
+  visited_ = false;
 }
 
 //==============================================================================
@@ -272,6 +282,9 @@ double LRBSpline2D::evalBasisFunction(double u,
 				bool u_at_end, bool v_at_end) const
 //==============================================================================
 {
+  int dim = coef_times_gamma_.dimension();
+  ALWAYS_ERROR_IF(rational_ && (der[0].dimension() != dim + 1), "Dimension mismatch for rational");
+  
   double eps = 1.0e-12;
    u_at_end = (u >= umax()-eps);
    v_at_end = (v >= vmax()-eps);
@@ -284,36 +297,16 @@ double LRBSpline2D::evalBasisFunction(double u,
    bspline_v_->evalBasisFunctions(v, deriv, bder2, v_at_end);
 
    int ki, kj, kr, kh;
-   // vector<double> bb((deriv+1)*(deriv+2)/2);
-   // for (kj=0, kr=0; kj<=deriv; ++kj)
-   //   for (ki=0; ki<=kj; ++ki, ++kr)
-   //     bb[kr] = evalBasisFunction(u, v, kj-ki, ki, u_at_end, v_at_end);
-
    if (rational_)
      {
-       int dim = coef_times_gamma_.dimension();
-       int nmb = (deriv+1)*(deriv+2)/2;
-       double tmp[(int)((MAX_DER+1)*(MAX_DER+2)*(MAX_DIM+1))];
-       double *tmpder = tmp;
-       double val;
-       Point tmppt(dim);
        kh = 0;
        for (ki=0; ki<=deriv; ++ki)
 	 for (kj=0; kj<=ki; ++kj, ++kh)
 	   {
-	     val = weight_*bder1[ki-kj]*bder2[kj];
 	     for (kr=0; kr<dim; ++kr)
-	       tmpder[kh*(dim+1)+kr] = coef_times_gamma_[kr]*val;
-	     tmpder[kh*(dim+1)+dim] = val;
+	       der[kh][kr] +=  weight_*coef_times_gamma_[kr]*bder1[ki-kj]*bder2[kj];
+	     der[kh][dim] += weight_*bder1[ki-kj]*bder2[kj];
 	   }
-       double *tmpder2 = tmpder+nmb*(dim+1);
-       SplineUtils::surface_ratder(tmpder, dim, deriv, tmpder2);
-       for (kh=0; kh<nmb; ++kh)
-	 {
-	   for (kr=0; kr<dim; ++kr)
-	     tmppt[kr] = tmpder2[kh*dim+kr];
-	   der[kh] = tmppt;
-	 }
      }
    else
      {
@@ -322,17 +315,8 @@ double LRBSpline2D::evalBasisFunction(double u,
 	 for (kj=0; kj<=ki; ++kj, ++kh)
 	   {
 	     der[kh] += coef_times_gamma_*bder1[ki-kj]*bder2[kj];
-	     // Point bb2 = eval(u, v, ki-kj, kj, u_at_end, v_at_end);
-	     // int stop_break = 1;
 	   }
      }
-
-
-   // return 
-  //   compute_univariate_spline(degree(XFIXED), u, kvec(XFIXED), mesh_->knotsBegin(XFIXED), 
-  // 			      u_deriv, u_at_end) *
-  //   compute_univariate_spline(degree(YFIXED), v, kvec(YFIXED), mesh_->knotsBegin(YFIXED),  
-  // 			      v_deriv, v_at_end);
 }
 
 
@@ -391,7 +375,6 @@ void LRBSpline2D::evalBasisGridDer(int nmb_der, const vector<double>& par1,
 
   // Combine univariate results
   // NOTE that rational functions are NOT handled
-  int kr;
   for (kj=0; kj<nmb2; ++kj)
     for (ki=0; ki<nmb1; ++ki)
       {
@@ -457,7 +440,6 @@ void LRBSpline2D::evalBasisGridDer(int nmb_der, const vector<double>& par1,
 
   // Multiply with weight
   // NOTE that rational functions are NOT handled
-  int kr;
   for (ki=0; ki<nmb; ++ki)
       {
 	derivs[ki] = gamma_*ebder[ki*(nmb_der+1)+1]; // dt
@@ -487,7 +469,19 @@ int LRBSpline2D::endmult_v(bool atstart) const
 }
 
 //==============================================================================
+vector<double> LRBSpline2D::kvec_val(Direction2D d) const
+//==============================================================================
+{
+   const Mesh2D* mesh = dynamic_cast<const Mesh2D*>(bspline_u_->getMesh());
+  vector<double> kval(kvec(d).size());
+  for (size_t ki=0; ki<kval.size(); ++ki)
+    kval[ki] = mesh->kval(d, kvec(d)[ki]);
+  return kval;
+}
+
+//==============================================================================
 Point LRBSpline2D::getGrevilleParameter() const
+//==============================================================================
 {
   double upar = bspline_u_->getGrevilleParameter();
   double vpar = bspline_v_->getGrevilleParameter();
@@ -530,10 +524,28 @@ bool LRBSpline2D::overlaps(Element2D *el) const
 }
 
 //==============================================================================
-bool LRBSpline2D::covers(double domain[]) const
+bool LRBSpline2D::overlaps(LRBSpline2D *bsp) const
 //==============================================================================
 {
   // Does it make sense to include equality?
+  if (bsp->umin() >= umax())
+    return false;
+  if (bsp->umax() <= umin())
+    return false;
+  if (bsp->vmin() >= vmax())
+    return false;
+  if (bsp->vmax() <= vmin())
+    return false;
+  
+  return true;
+}
+
+//==============================================================================
+bool LRBSpline2D::covers(double domain[]) const
+//==============================================================================
+{
+  if (!overlaps(domain))
+    return false;
   if (domain[0] < umin())
     return false;
   if (domain[1] > umax())
@@ -550,7 +562,8 @@ bool LRBSpline2D::covers(double domain[]) const
 bool LRBSpline2D::covers(LRBSpline2D *bsp) const
 //==============================================================================
 {
-  // Does it make sense to include equality?
+  if (!overlaps(bsp))
+    return false;
   if (bsp->umin() < umin())
     return false;
   if (bsp->umax() > umax())
@@ -559,10 +572,86 @@ bool LRBSpline2D::covers(LRBSpline2D *bsp) const
     return false;
   if (bsp->vmax() > vmax())
     return false;
+
+  if (bsp->umin() == umin() && bsp->endmult_u(true) > endmult_u(true))
+    return false;
+  if (bsp->umax() == umax() && bsp->endmult_u(false) > endmult_u(false))
+    return false;
+  if (bsp->vmin() == vmin() && bsp->endmult_v(true) > endmult_v(true))
+    return false;
+  if (bsp->vmax() == vmax() && bsp->endmult_v(false) > endmult_v(false))
+    return false;
   
   return true;
 }
  
+//==============================================================================
+void LRBSpline2D::computeNestLevel()
+//==============================================================================
+{
+  if (nest_level_ >= 0)
+    return;   // Assumes the recorded value is correct
+
+  visited_ = true;
+  
+  // Collect potential ancestors
+  set<LRBSpline2D*> cand;
+  for (auto el=support_.begin(); el!=support_.end(); ++el)
+    {
+      for (auto bsp=(*el)->supportBegin(); bsp!=(*el)->supportEnd(); ++bsp)
+	if ((*bsp) != this)
+	  cand.insert(*bsp);
+    }
+
+  for (auto bsp=cand.begin(); bsp!=cand.end(); ++bsp)
+    {
+      if ((*bsp)->visited())
+	continue;
+      if (!(*bsp)->hasNestLevel())
+	(*bsp)->computeNestLevel();
+      if ((*bsp)->covers(this))
+	{
+	  int count = (*bsp)->getNestLevel();
+	  nest_level_ = std::max(nest_level_, count + 1);
+	}
+    }
+
+  if (nest_level_ < 0)
+    nest_level_ = 0;
+
+  for (auto bsp=cand.begin(); bsp!=cand.end(); ++bsp)
+    {
+    if (covers(*bsp))
+      {
+	int level = (*bsp)->getNestLevel();
+	if (level >= 0)
+	  (*bsp)->setNestLevel(std::max(level, nest_level_+1));
+      }
+    }
+      
+  visited_ = false;
+}
+
+//==============================================================================
+void LRBSpline2D::getOverlapping(vector<LRBSpline2D*>& overlap)
+//==============================================================================
+{
+  set<LRBSpline2D*> cand;
+  for (auto el=support_.begin(); el!=support_.end(); ++el)
+    {
+      for (auto bsp=(*el)->supportBegin(); bsp!=(*el)->supportEnd(); ++bsp)
+	if ((*bsp) != this)
+	  cand.insert(*bsp);
+    }
+
+  for (auto bsp=cand.begin(); bsp!=cand.end(); ++bsp)
+    {
+      if ((*bsp)->covers(this))
+	overlap.push_back(*bsp);
+    }
+ 
+}
+
 //==============================================================================
 bool LRBSpline2D::addSupport(Element2D *el)
 //==============================================================================
@@ -620,6 +709,248 @@ std::vector<Element2D*>::iterator LRBSpline2D::supportedElementEnd()
 }
 
 //==============================================================================
+bool LRBSpline2D::adaptProjCoef(Point& coef)
+//==============================================================================
+{
+  if (nest_level_ == 0)
+    return true;
+
+  int cdim = coef.dimension();
+  
+  // Collect ancestors
+  set<LRBSpline2D*> ancest0;
+  for (auto el=support_.begin(); el!=support_.end(); ++el)
+    {
+      for (auto bsp=(*el)->supportBegin(); bsp!=(*el)->supportEnd(); ++bsp)
+	if ((*bsp) != this)
+	  {
+	    int level = (*bsp)->getNestLevel();
+	    if (level < nest_level_ && (*bsp)->covers(this))
+	      ancest0.insert(*bsp);
+	  }
+    }
+
+#ifdef DEBUG_PROJ
+   std::cout << "Nesting level: " << nest_level_ << ", scale factor: " << gamma_ << std::endl;
+  std::cout << "Knots curr: [";
+  vector<int> kvec_u1 = bspline_u_->kvec();
+  vector<int> kvec_v1 = bspline_v_->kvec();
+   for (size_t kj=0; kj<kvec_u1.size(); ++kj)
+    std::cout << knotval(XFIXED, kvec_u1[kj]) << ", ";
+  std::cout << "]x[";
+  for (size_t kj=0; kj<kvec_v1.size(); ++kj)
+    std::cout << knotval(YFIXED, kvec_v1[kj]) << ", ";
+  std::cout << "]" << std::endl;
+#endif
+    
+  vector<LRBSpline2D*> ancest(ancest0.begin(), ancest0.end());
+#ifdef DEBUG_PROJ
+   if (ancest.size() > 1)
+    std::cout << "Number of ancestors: " << ancest.size() << std::endl;
+#endif
+  double tmp = 0.0;
+  for (size_t ki=0; ki<ancest.size(); ++ki)
+    {
+      double weight = nestingWeight(ancest[ki]);
+      Point coefgamma = ancest[ki]->coefTimesGamma();
+      if (coefgamma.dimension() > cdim)
+	{
+	  Point tmp(coefgamma.begin(), coefgamma.begin()+cdim);
+	  coefgamma = tmp;
+	}
+      coef -= weight*coefgamma;
+      double gamma = ancest[ki]->gamma();
+      tmp += weight*gamma;
+    }
+  double tmp2 = (1.0 - tmp)/gamma_;
+#ifdef DEBUG_PROJ
+  std::cout << "Projection coefficient adaption, nesting depth: " << nest_level_ << ", error: " << 1.0-tmp2 << std::endl;
+#endif
+  if (fabs(tmp2-1.0) > 1.0e-4)
+    {
+#ifdef DEBUG_PROJ
+      std::cout << "Invariant: " << tmp2 << std::endl;
+#endif
+      setNestLevel(-1);
+      computeNestLevel();
+      return false;
+    }
+  coef /= gamma_;
+  return true;
+}
+
+  struct knotwgt
+  {
+    vector<int> kvec_;
+    double alpha_;
+
+    knotwgt(vector<int> kvec, double alpha)
+    {
+      kvec_ = kvec;
+      alpha_ = alpha;
+    }
+  };
+  
+//==============================================================================
+double LRBSpline2D::nestingWeight(LRBSpline2D* other)
+//==============================================================================
+{
+  vector<int> kvec_u1 = bspline_u_->kvec();
+  vector<int> kvec_v1 = bspline_v_->kvec();
+  vector<int> kvec_u2_0 = other->kvec(XFIXED);
+  vector<int> kvec_v2_0 = other->kvec(YFIXED);
+  vector<knotwgt> kvec_u2;
+  kvec_u2.push_back(knotwgt(kvec_u2_0, 1.0));
+  vector<knotwgt> kvec_v2;
+  kvec_v2.push_back(knotwgt(kvec_v2_0, 1.0));
+
+#ifdef DEBUG_PROJ
+  std::cout << "Knots ancestor: [";
+  for (size_t kj=0; kj<kvec_u2_0.size(); ++kj)
+    std::cout << knotval(XFIXED, kvec_u2_0[kj]) << ", ";
+  std::cout << "]x[";
+  for (size_t kj=0; kj<kvec_v2_0.size(); ++kj)
+    std::cout << knotval(YFIXED, kvec_v2_0[kj]) << ", ";
+  std::cout << "]" << std::endl;
+  std::cout << "Nesting level: " << other->nest_level_ << ", scale factor: " << other->gamma_ << std::endl;
+#endif
+  vector<int> diff1, diff2;
+  std::set_difference(kvec_u1.begin(), kvec_u1.end(), kvec_u2_0.begin(),
+		      kvec_u2_0.end(), std::back_inserter(diff1));
+  std::set_difference(kvec_v1.begin(), kvec_v1.end(), kvec_v2_0.begin(),
+		      kvec_v2_0.end(), std::back_inserter(diff2));
+
+  const Mesh2D *mesh = getMesh();
+
+#ifdef DEBUG_PROJ
+  std::cout << "Knots in 1. parameter direction: " << diff1.size() << std::endl;
+  std::cout << "Knots in 2. parameter direction: " << diff2.size() << std::endl;
+ #endif
+
+  int k1 = kvec_u1[0]; 
+  int k2 = kvec_u1[kvec_u1.size()-1]; 
+  for (size_t ki=0; ki<diff1.size(); ++ki)
+    {
+      double val = knotval(XFIXED, diff1[ki]);
+      for (size_t kj=0; kj<kvec_u2.size(); ++kj)
+	{
+	  int ks = kvec_u2[kj].kvec_.size()-1;
+	  if (k1 < kvec_u2[kj].kvec_[0] || k2 > kvec_u2[kj].kvec_[ks])
+	    continue;
+	  double y1 = mesh->kval(XFIXED, kvec_u2[kj].kvec_[0]);
+	  double y2 = mesh->kval(XFIXED, kvec_u2[kj].kvec_[1]);
+	  double y3 = mesh->kval(XFIXED, kvec_u2[kj].kvec_[ks-1]);
+	  double y4 = mesh->kval(XFIXED, kvec_u2[kj].kvec_[ks]);
+	  double a1 = (val >= y3) ? 1.0 : (val - y1)/(y3 - y1);
+	  double a2 = (val <= y2) ? 1.0 : (y4 - val)/(y4 - y2);
+	  size_t kr;
+	  for (kr=1; kr<kvec_u2[kj].kvec_.size(); ++kr)
+	    if (diff1[ki] > kvec_u2[kj].kvec_[kr-1] && diff1[ki] < kvec_u2[kj].kvec_[kr])
+	      break;
+	  if (kr == kvec_u2[kj].kvec_.size())
+	    kvec_u2[kj].kvec_.push_back(diff1[ki]);
+	  else
+	    kvec_u2[kj].kvec_.insert(kvec_u2[kj].kvec_.begin()+kr, diff1[ki]);
+	  vector<int> kv(kvec_u2[kj].kvec_.begin()+1, kvec_u2[kj].kvec_.end());
+	  double alp = kvec_u2[kj].alpha_*a2;
+	  kvec_u2[kj].kvec_.pop_back();
+	  kvec_u2[kj].alpha_ *= a1;
+	  kvec_u2.insert(kvec_u2.begin()+kj+1, knotwgt(kv, alp));
+	  ++kj;
+	}
+      
+      for (size_t kj=0; kj<kvec_u2.size();)
+	{
+	  int ks = kvec_u2[kj].kvec_.size()-1;
+	  if (k1 < kvec_u2[kj].kvec_[0] || k2 > kvec_u2[kj].kvec_[ks])
+	    kvec_u2.erase(kvec_u2.begin()+kj);
+	  else
+	    ++kj;
+	}
+
+      for (size_t kj=1; kj<kvec_u2.size();)
+	{
+	  if (std::equal(kvec_u2[kj-1].kvec_.begin(), kvec_u2[kj-1].kvec_.end(),
+			 kvec_u2[kj].kvec_.begin()))
+	    {
+	      kvec_u2[kj-1].alpha_ += kvec_u2[kj].alpha_;
+	      kvec_u2.erase(kvec_u2.begin()+kj);
+	    }
+	  else
+	    ++kj;
+	}
+    }
+  
+  k1 = kvec_v1[0]; 
+  k2 = kvec_v1[kvec_v1.size()-1]; 
+  for (size_t ki=0; ki<diff2.size(); ++ki)
+    {
+      double val = knotval(YFIXED, diff2[ki]);
+      for (size_t kj=0; kj<kvec_v2.size(); ++kj)
+	{
+	  int ks = kvec_v2[kj].kvec_.size()-1;
+	  if (k1 < kvec_v2[kj].kvec_[0] || k2 > kvec_v2[kj].kvec_[ks])
+	    continue;
+	  double y1 = mesh->kval(YFIXED, kvec_v2[kj].kvec_[0]);
+	  double y2 = mesh->kval(YFIXED, kvec_v2[kj].kvec_[1]);
+	  double y3 = mesh->kval(YFIXED, kvec_v2[kj].kvec_[ks-1]);
+	  double y4 = mesh->kval(YFIXED, kvec_v2[kj].kvec_[ks]);
+	  double a1 = (val >= y3) ? 1.0 : (val - y1)/(y3 - y1);
+	  double a2 = (val <= y2) ? 1.0 : (y4 - val)/(y4 - y2);
+	  size_t kr;
+	  for (kr=1; kr<kvec_v2[kj].kvec_.size(); ++kr)
+	    if (diff2[ki] > kvec_v2[kj].kvec_[kr-1] && diff2[ki] < kvec_v2[kj].kvec_[kr])
+	      break;
+	  if (kr == kvec_v2[kj].kvec_.size())
+	    kvec_v2[kj].kvec_.push_back(diff2[ki]);
+	  else
+	    kvec_v2[kj].kvec_.insert(kvec_v2[kj].kvec_.begin()+kr, diff2[ki]);
+	  vector<int> kv(kvec_v2[kj].kvec_.begin()+1, kvec_v2[kj].kvec_.end());
+	  double alp = kvec_v2[kj].alpha_*a2;
+	  kvec_v2[kj].kvec_.pop_back();
+	  kvec_v2[kj].alpha_ *= a1;
+	  kvec_v2.insert(kvec_v2.begin()+kj+1, knotwgt(kv, alp));
+	  ++kj;
+	}
+      
+      for (size_t kj=0; kj<kvec_v2.size();)
+	{
+	  int ks = kvec_v2[kj].kvec_.size()-1;
+	  if (k1 < kvec_v2[kj].kvec_[0] || k2 > kvec_v2[kj].kvec_[ks])
+	    kvec_v2.erase(kvec_v2.begin()+kj);
+	  else
+	    ++kj;
+	}
+
+      for (size_t kj=1; kj<kvec_v2.size();)
+	{
+	  if (std::equal(kvec_v2[kj-1].kvec_.begin(), kvec_v2[kj-1].kvec_.end(),
+			 kvec_v2[kj].kvec_.begin()))
+	    {
+	      kvec_v2[kj-1].alpha_ += kvec_v2[kj].alpha_;
+	      kvec_v2.erase(kvec_v2.begin()+kj);
+	    }
+	  else
+	    ++kj;
+	}
+    }
+
+  double alpha = 1.0;
+  for (size_t kj=0; kj<kvec_u2.size(); ++kj)
+    if (std::equal(kvec_u1.begin(), kvec_u1.end(), &kvec_u2[kj].kvec_[0]))
+	alpha *= kvec_u2[kj].alpha_;
+  for (size_t kj=0; kj<kvec_v2.size(); ++kj)
+    if (std::equal(kvec_v1.begin(), kvec_v1.end(), &kvec_v2[kj].kvec_[0]))
+	alpha *= kvec_v2[kj].alpha_;
+
+#ifdef DEBUG_PROJ
+   std::cout << "Weight: " << alpha << std::endl;
+#endif
+  return alpha;
+}
+
+
+//==============================================================================
 bool LRBSpline2D::checkOverload()
 //==============================================================================
 {
@@ -637,20 +968,11 @@ bool LRBSpline2D::checkOverload()
 
 
 //==============================================================================
-void LRBSpline2D::reverseParameterDirection(bool dir_is_u)
-//==============================================================================
-{
-  if (dir_is_u)
-    bspline_u_->reverseParameterDirection();
-  else
-    bspline_v_->reverseParameterDirection();
-}
-
-
-//==============================================================================
 void LRBSpline2D::swapParameterDirection()
 //==============================================================================
 {
+  bspline_u_->setPardir(2);
+  bspline_v_->setPardir(1);
   std::swap(bspline_u_, bspline_v_);
 }
 

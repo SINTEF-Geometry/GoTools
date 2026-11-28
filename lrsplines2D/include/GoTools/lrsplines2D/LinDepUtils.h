@@ -52,7 +52,7 @@ namespace Go
   {
   //============================================================================
   /// Tests for potential linear dependence among the LR B-splines of a
-  /// given LR spline. To be more precise: Tests whether a given LR
+  /// given LR spline surface. To be more precise: Tests whether a given LR
   /// spline is peelable. We say an LR spline is peelable if the
   /// incidence matrix contains NO non-zero entries after peeling it,
   /// i.e., if ALL the overloaded LR B-splines are peelable,
@@ -66,6 +66,7 @@ namespace Go
   /// required to determine whether some of the LR B-splines are
   /// ACTUALLY part of a linear dependence relation.
   //============================================================================
+#if 0
   bool isPeelable( const LRSplineSurface& );
 
   //============================================================================
@@ -78,13 +79,11 @@ namespace Go
   std::vector<LRBSpline2D*> unpeelableBasisFunctions ( const LRSplineSurface& );
 
   //============================================================================
+#endif
+  
   //============================================================================
   std::vector<LRBSpline2D*> fetchUnpeelable( const LRSplineSurface& surf,
 					     int minnmb);
-  //============================================================================
-  //============================================================================
-  bool overloadedMeshRectangles(const LRSplineSurface& surf);
-  
   //============================================================================
   //============================================================================
   void checkOverloaded(int minNmb, std::vector<LRBSpline2D*>& funs,

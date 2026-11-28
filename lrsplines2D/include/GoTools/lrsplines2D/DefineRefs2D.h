@@ -47,9 +47,21 @@ namespace Go
 //==============================================================================
 {
   /// Given a specifiction for how to refine with respect to an LRBSpline2D
-  /// (or Element2D?), prepare input for LRSplineSurface::refine
+  /// or Element2D, prepare input for LRSplineSurface::refine
 
   class LRBSpline2D;
+
+  enum RefineStrategy
+    {
+      notSet = 0,
+      fullSpan = 1,
+      minSpanSize = 2,
+      minSpanError = 3,
+      minSpanCombined = 4,
+      structuredMesh = 5,
+      restrictedMesh = 6,
+      restrictedMeshElem = 7
+    };
   
   namespace DefineRefs2D
   {
@@ -66,10 +78,30 @@ namespace Go
 			      std::vector<LRSplineSurface::Refinement2D>& refs_y,
 			      bool adjust = true, bool reduced = false);
 
+    void defineRefsAtEdge(const Mesh2D& mesh, Direction2D dir,
+			  int edge, int ix, const std::vector<double>& knot_vals, 
+			  int element_width,
+			  std::vector<LRSplineSurface::Refinement2D>& refs);
+    
     /// Add a new mesh line segment to the collection of such. Combine with
     /// previously defined lines if possible
     void appendRef(std::vector<LRSplineSurface::Refinement2D>& refs,
 		   LRSplineSurface::Refinement2D& curr_ref, double tol);
+
+    void refineStructuredMesh(const LRSplineSurface& surf,
+			      LRBSpline2D* bspl, Direction2D fixdir,
+			      int mult,
+			      std::vector<LRSplineSurface::Refinement2D>& refs);
+
+   void refineFullSpan(const LRSplineSurface& surf,
+			double upar, double vpar, Direction2D fixdir,
+			int mult,
+			LRSplineSurface::Refinement2D& refs);
+
+    void refineFromElement(const LRSplineSurface& surf,
+			   Element2D *elem, Direction2D fixdir,
+			   RefineStrategy strategy, int mult,
+			   LRSplineSurface::Refinement2D& refs);
 
     
   } // end namespace DefineRefs2D

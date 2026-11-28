@@ -37,7 +37,7 @@
  * written agreement between you and SINTEF ICT. 
  */
 
-//#define DEBUG_ADAPT
+#define DEBUG_ADAPT
 
 #include "GoTools/compositemodel/AdaptSurface.h"
 #include "GoTools/compositemodel/ftSmoothSurf.h"
